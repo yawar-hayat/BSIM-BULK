@@ -1,15 +1,15 @@
-// ********************************************************
-// **** BSIM6.1.0 released by Yogesh Singh Chauhan on 03/20/2014 ****/
+//********************************************************
+// **** BSIM6.1.1 released by Sourabh Khandelwal on 07/30/2015 ****/
 // ********************************************************
 //
 // ********************************************************
-// * Copyright 2013 Regents of the University of California. 
+// * Copyright 2015 Regents of the University of California. 
 // * All rights reserved.
 // *
 // * Project Director: Prof. Chenming Hu.
 // * Authors: Yogesh Singh Chauhan, M. A. Karim
-// *          Sriramkumar Venugopalan, Harshit Agarwal, Darsen Lu,
-// *          Ali Niknejad, Chenming Hu
+// *          Sriramkumar Venugopalan, Harshit Agarwal, Chetan Gupta, Darsen Lu,
+// *          Sayeef Salahuddin, Chenming Hu
 // ********************************************************
 // ********************************************************
 // *   NONDISCLOSURE STATEMENT
@@ -27,13 +27,13 @@
 // itself but may charge for additions, extensions, or support.
 // 2. In any product based on the software, the users agree to acknowledge
 // the University of California that developed the software. This
-// acknowledgment shall appear in the product documentation.
+// acknowledgement shall appear in the product documentation.
 // 3. The users agree to obey all U.S. Government restrictions governing
 // redistribution or export of the software.
 // 4. The users agree to reproduce any copyright notice which appears on
 // the software on any copy or modification of such made available
 // to others
-// Agreed to on __March 20, 2014_________________
+// Agreed to on __July 25, 2015_________________
 // By: ___University of California, Berkeley____ 
 //     ___Chenming Hu_____________________ 
 //     ___Professor in Graduate School _______
@@ -66,7 +66,9 @@
 `define __RBODYMOD__
 `define __SHMOD__
 
+
 // Normalized pinch-off voltage including PD
+
 `define PO_psip(vg_vfb,gamma,DPD,phif,psip) \
 	T1 = 1.0 + DPD; \
 	vgfbPD = vg_vfb/T1; \
@@ -82,7 +84,6 @@
 		T2 = sqrt(vgfbPD - 1.0 + T3 + T1*T1) - T1; \
 		psip = T2*T2 + 1.0 - T3; \
 	end \
-
 // BSIMv6's normalized charge-voltage relationship
 `define BSIM_q(psip,phib,vch,gam,q) \
 	T8 = 0.5*( psip+1.0 + sqrt((psip-1.0)*(psip-1.0) + 0.25*2*2 ) ); \
@@ -260,7 +261,6 @@
 			endcase \
 		end \
 	end
-
 
 `define BSIM6RdseffGeo(nf, geo, rgeo, minSD, Weffcj, Rsh, DMCG, DMCI, DMDG, TYPE, Rtot) \
 	begin \
@@ -511,9 +511,81 @@
 `define EPS0 8.85418e-12
 `define KboQ 8.617087e-5 // Joule / degree
 
-module bsim6(d, g, s, b);
-inout d, g, s, b;
+//  Macros for the model/instance parameters
+//
+//  MPRxx    model    parameter real
+//  MPIxx    model    parameter integer
+//  IPRxx    instance parameter real
+//  IPIxx    instance parameter integer
+//     || 
+//     cc    closed lower bound, closed upper bound
+//     oo    open   lower bound, open   upper bound
+//     co    closed lower bound, open   upper bound
+//     oc    open   lower bound, closed upper bound
+//     cz    closed lower bound=0, open upper bound=inf
+//     oz    open   lower bound=0, open upper bound=inf
+//     nb    no bounds
+//     ex    no bounds with exclude
+//     sw    switch(integer only, values  0=false  and  1=true)
+//     ty    switch(integer only, values -1=p-type and +1=n-type)
+//
+//  IPM   instance parameter mFactor(multiplicity, implicit for LRM2.2)
+//  OPP   operating point parameter, includes units and description for printing
+//
+`define OPP(nam,uni,des)               (*units=uni,                   desc=des*)           real    nam ;
+
+`define MPRnb(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter real    nam=def ; 
+`define MPRex(nam,def,uni,exc,    des) (*units=uni,                   desc=des*) parameter real    nam=def exclude exc ;
+`define MPRcc(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter real    nam=def from[lwr:upr] ; 
+`define MPRoo(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter real    nam=def from(lwr:upr) ; 
+`define MPRco(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter real    nam=def from[lwr:upr) ; 
+`define MPRoc(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter real    nam=def from(lwr:upr] ; 
+`define MPRcz(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter real    nam=def from[  0:inf);
+`define MPRoz(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter real    nam=def from(  0:inf);
+
+`define MPInb(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter integer nam=def ;
+`define MPIex(nam,def,uni,exc,    des) (*units=uni,                   desc=des*) parameter integer nam=def exclude exc ;
+`define MPIcc(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter integer nam=def from[lwr:upr] ;
+`define MPIoo(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter integer nam=def from(lwr:upr) ; 
+`define MPIco(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter integer nam=def from[lwr:upr) ; 
+`define MPIoc(nam,def,uni,lwr,upr,des) (*units=uni,                   desc=des*) parameter integer nam=def from(lwr:upr] ; 
+`define MPIcz(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter integer nam=def from[  0:inf);
+`define MPIoz(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter integer nam=def from(  0:inf);
+
+`define MPIsw(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter integer nam=def from[  0:  1] ;
+`define MPIty(nam,def,uni,        des) (*units=uni,                   desc=des*) parameter integer nam=def from[ -1:  1] exclude 0 ;
+
+`define IPRnb(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def ; 
+`define IPRex(nam,def,uni,exc,    des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def exclude exc ;
+`define IPRcc(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from[lwr:upr] ; 
+`define IPRoo(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from(lwr:upr) ; 
+`define IPRco(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from[lwr:upr) ; 
+`define IPRoc(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from(lwr:upr] ; 
+`define IPRcz(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from[  0:inf);
+`define IPRoz(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter real    nam=def from(  0:inf);
+
+`define IPInb(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def ;
+`define IPIex(nam,def,uni,exc,    des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def exclude exc ;
+`define IPIcc(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from[lwr:upr] ; 
+`define IPIoo(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from(lwr:upr) ; 
+`define IPIco(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from[lwr:upr) ; 
+`define IPIoc(nam,def,uni,lwr,upr,des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from(lwr:upr] ; 
+`define IPIcz(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from[  0:inf);
+`define IPIoz(nam,def,uni,        des) (*units=uni, type="instance",  desc=des*) parameter integer nam=def from(  0:inf);
+
+
+//`define __THERMAL_NODE__
+`ifdef __THERMAL_NODE__
+
+	module bsim6(d, g, s, b, t);
+	inout      d, g, s, b, t;
+`else
+
+	module bsim6(d, g, s, b);
+	inout      d, g, s, b;
+`endif 
 electrical d, g, s, b;
+
 
 `ifdef __RDSMOD__
 	electrical di, si;
@@ -589,957 +661,1073 @@ analog function real hypsmooth;
 		hypsmooth = 0.5 * (x + sqrt(x*x + 4.0*c*c));
 	end
 endfunction
+/***************************/
+/*  Instance Parameters    */
+/***************************/
 
+/* Note: Some instance parameters are also model parameters.  */
+/*       Please refer to the technical note for details.      */
+`IPRoz( L              ,10u            ,"m"                                  	,"" ) 
+`IPRoz( W              ,10u            ,"m"           							,"Total width including fingers" ) 
+`IPIco( NF             ,1              ,""            ,1           ,inf         ,"Number of fingers" ) 
+`IPRcz( NRS            ,1.0            ,""            							,"Number of squares in source" ) 
+`IPRcz( NRD            ,1.0            ,""            							,"Number of squares in drain" ) 
+`IPRnb( VFBSDOFF       ,0.0            ,""            							,"" ) 
+`IPIcc( MINZ           ,0              ,""            ,0           ,1           ,"Minimize either D or S" ) 
+`IPRnb( XGW            ,0.0            ,"m"           							,"Dist from gate contact center to dev edge [m]" ) 
+`IPIcc( NGCON          ,1              ,""            ,1           ,2           ,"Number of gate contacts" ) 
+`IPIcc( RGATEMOD       ,0              ,""            ,0           ,3           ,"Gate resistance model selector" ) 
+`IPIcc( RBODYMOD       ,0              ,""            ,0           ,2           ,"Distributed body R model" ) 
+`IPIcc( GEOMOD         ,0              ,""            ,0           ,10          ,"Geo dependent parasitics model" ) 
+`IPIcc( RGEOMOD        ,0              ,""            ,0           ,8           ,"Geometry-dependent source/drain resistance,  0: RSH-based, 1: Holistic" ) 
+
+`IPRcz( RBPB           ,50.0           ,"ohm"         							,"Resistance between bNodePrime and bNode" ) 
+`IPRcz( RBPD           ,50.0           ,"ohm"         							,"Resistance between bNodePrime and bNode " ) 
+`IPRcz( RBPS           ,50.0           ,"ohm"         							,"Resistance between bNodePrime and sbNode " ) 
+`IPRcz( RBDB           ,50.0           ,"ohm"         							,"Resistance between bNode and dbNode " ) 
+`IPRcz( RBSB           ,50.0           ,"ohm"         							,"Resistance between bNode and sbNode" ) 
+`IPRnb( SA             ,0.0            ,""            							,"Distance between OD edge from Poly from one side" ) 
+`IPRnb( SB             ,0.0            ,""            							,"Distance between OD edge from Poly from other side" ) 
+`IPRnb( SD             ,0.0            ,""            							,"Distance between neighboring fingers" ) 
+`IPIoo( SCA            ,0.0            ,""           ,-inf		  ,inf 			,"" ) 
+`IPIoo( SCB            ,0.0            ,""           ,-inf		  ,inf 			,"" ) 
+`IPIoo( SCC            ,0.0            ,""           ,-inf		  ,inf 			,"" ) 
+`IPIoo( SC             ,0.0            ,""           ,-inf		  ,inf 			,"Distance to a single well edge if <=0.0, turn off WPE" ) 
+`IPRcz( AS             ,0.0            ,""            							,"Source to Substrate Junction Area" ) 
+`IPRcz( AD             ,0.0            ,""            							,"Drain to Substrate Junction Area" ) 
+`IPRcz( PS             ,0.0            ,""            							,"Source to Substrate Junction Perimeter" ) 
+`IPRcz( PD             ,0.0            ,""            							,"Drain to Substrate Junction Perimeter" ) 
 /************************/
 /*  Model Parameters    */
 /************************/
-parameter integer TYPE		= `ntype	from [`ptype:`ntype] exclude 0;
-parameter integer CVMOD		= 0		from [0:1]; // 0: Consistent IV-CV
-													// 1: Different IV-CV
-parameter integer GEOMOD	= 0 		from [0:10];// Geo dependent parasitics model
-parameter integer RGEOMOD	= 0		from [0:8]; // Geometry-dependent source/drain resistance
-													//  0: RSH-based, 1: Holistic
-parameter integer COVMOD	= 0		from [0:1]; // 0: Use Bias-independent Overlap Capacitances
-													// 1: Use Bias-dependent Overlap Capacitances
-parameter integer RDSMOD	= 0 		from [0:2]; // 0: Internal bias dependent and external bias independent s/d resistance model
-													// 1: External s/d resistance model
-													// 2: Internal s/d resistance model	
-parameter integer GIDLMOD	= 0		from [0:1]; // 0: Turn off GIDL Current
-													// 1: Turn on GIDL Current
-parameter integer RGATEMOD	= 0		from [0:3]; // Gate resistance model selector
-parameter integer RBODYMOD	= 0		from [0:2]; // Distributed body R model
-parameter integer IGCMOD	= 0		from [0:1]; // 0: Turn off Igc, Igs and Igd
-													// 1: Turn on Igc, Igs and Igd
-parameter integer IGBMOD	= 0		from [0:1]; // 0: Turn off Igb
-													// 1: Turn on Igb
-parameter integer TNOIMOD	= 0		from [0:1]; // Thermal noise model selector
-parameter integer SHMOD		= 0		from [0:1]; // 0 : Self heating model OFF
-												// 1 : Self heating model ON
+`MPIty( TYPE           ,`ntype         ,""            							,"" ) 
+`MPIcc( CVMOD          ,0              ,""            ,0           ,1           ,"0: Consistent IV-CV, 1: Different IV-CV" ) 
+`MPIcc( COVMOD         ,0              ,""            ,0           ,1           ,"0: Use Bias-independent Overlap Capacitances,  1: Use Bias-dependent Overlap Capacitances" ) 
+														
+`MPIcc( RDSMOD         ,0              ,""            ,0           ,2           ,"0: Internal bias dependent and external bias independent s/d resistance model,  1: External s/d resistance model,  2: Internal s/d resistance model" ) 
+
+`MPIcc( WPEMOD         ,0              ,""            ,0           ,1           ,"Model flag" ) 														
+														
+`MPIcc( ASYMMOD        ,0              ,""            ,0           ,1           ,"0: Asymmetry Model turned off - forward mode parameters used,  1: Asymmetry Model turned on" ) 
+														
+
+`MPIcc( GIDLMOD        ,0              ,""            ,0           ,1           ,"0: Turn off GIDL Current,  1: Turn on GIDL Current" ) 
+														
+`MPIcc( IGCMOD         ,0              ,""            ,0           ,1           ,"0: Turn off Igc, Igs and Igd,  1: Turn on Igc, Igs and Igd" ) 
+														
+`MPIcc( IGBMOD         ,0              ,""            ,0           ,1           ,"0: Turn off Igb,  1: Turn on Igb" ) 
+														
+`MPIcc( TNOIMOD        ,0              ,""            ,0           ,1           ,"Thermal noise model selector" ) 
+`MPIcc( SHMOD          ,0              ,""            ,0           ,1           ,"0 : Self heating model OFF,  1 : Self heating model ON" ) 
+														
+`MPIcc( MOBSCALE       ,0              ,""            ,0           ,1           ,"Mobility scaling model, 0: Old Model,  1: New Model" ) 
+																						  
 // *************************
 //   Device Parameters
 // *************************
-parameter real L	 	= 10u	from (0:inf);	// units are m
-parameter real LLONG 		= 10u	from (0:inf);	// L of extracted Long channel device - units are m
-parameter real LMLT		= 1.0	from (0:inf);	// Length Shrinking Parameter
-parameter real WMLT		= 1.0	from (0:inf);	// Width Shrinking Parameter
-parameter real XL 		= 0.0;			// L offset for channel length due to mask/etch effect
-parameter real W	 	= 10u	from (0:inf);	// Total Width including fingers (units are m)
-parameter real WWIDE 		= 10u	from (0:inf);	// W of extracted Wide channel device - units are m
-parameter real XW 		= 0.0;					// W offset for channel width due to mask/etch effect
-parameter real LINT		= 0.0;					// delta L for IV
-parameter real LL		= 0.0;
-parameter real LW		= 0.0;
-parameter real LWL		= 0.0;
-parameter real LLN		= 1.0;
-parameter real LWN		= 1.0;
-parameter real WINT		= 0.0;					// delta W for IV
-parameter real WL		= 0.0;
-parameter real WW		= 0.0;
-parameter real WWL		= 0.0;
-parameter real WLN		= 1.0;
-parameter real WWN		= 1.0;
-parameter real DLC		= 0.0;					// delta L for CV
-parameter real LLC		= 0.0;
-parameter real LWC		= 0.0;
-parameter real LWLC		= 0.0;
-parameter real DWC		= 0.0;					// delta W for CV
-parameter real WLC		= 0.0;
-parameter real WWC		= 0.0;
-parameter real WWLC		= 0.0;
-parameter real TOXE		= 3.0e-9;				// Effective gate dielectric thickness relative to SiO2, m
-parameter real TOXP		= TOXE;					// Physical gate dielectric thickness, m
-												// If not given, TOXP is calculated from TOXE and DTOX
-parameter real DTOX		= 0.0;					// Difference between effective dielectric thickness
-												// and physical thickness
-parameter integer NF	= 1		from [1:inf);	// number of fingers
-parameter real NDEP 	= 1e24;					// Channel Doping Concentration (m^-3) for IV
-parameter real NDEPL1 	= 0.0;					// Length dependence coefficient of NDEP
-parameter real NDEPLEXP1 = 1.0	from (0:inf);			// Length dependence exponent coefficient of NDEP
-parameter real NDEPL2 	= 0.0;					// Length dependence of NDEP - For Short Channel Devices
-parameter real NDEPLEXP2 = 2.0	from (0:inf);			// Length dependence exponent coefficient of NDEP
-parameter real NDEPW 	= 0.0;					// Width dependence coefficient of NDEP
-parameter real NDEPWEXP = 1.0	from (0:inf);			// Width dependence exponent coefficient of NDEP
-parameter real NDEPWL 	= 0.0;					// Width-Length dependence coefficient of NDEP
-parameter real NDEPWLEXP = 1.0	from (0:inf);			// Width-Length dependence exponent coefficient of NDEP
-parameter real LNDEP 	= 0.0;
-parameter real WNDEP 	= 0.0;
-parameter real PNDEP 	= 0.0;
 
-parameter real NDEPCV 	= NDEP;					// Channel Doping Concentration (m^-3) for CV
-parameter real NDEPCVL1 = NDEPL1;				// Length dependence coefficient of NDEPCV
-parameter real NDEPCVLEXP1 = NDEPLEXP1	from (0:inf);		// Length dependence exponent coefficient of NDEPCV
-parameter real NDEPCVL2 = NDEPL2;				// Length dependence coefficient of NDEPCV - For Short Channel Devices
-parameter real NDEPCVLEXP2 = NDEPLEXP2	from (0:inf);		// Length dependence exponent coefficient of NDEPCV
-parameter real NDEPCVW 	= NDEPW;				// Width dependence coefficient of NDEPCV
-parameter real NDEPCVWEXP = NDEPWEXP	from (0:inf);		// Width dependence exponent coefficient of NDEPCV
-parameter real NDEPCVWL	= NDEPWL;				// Width-Length dependence coefficient of NDEPCV
-parameter real NDEPCVWLEXP = NDEPWLEXP	from (0:inf);		// Width-Length dependence exponent coefficient of NDEPCV
-parameter real LNDEPCV 	= LNDEP;
-parameter real WNDEPCV 	= WNDEP;
-parameter real PNDEPCV 	= PNDEP;
+`MPRoz( LLONG          ,10u            ,"m"           							,"L of extracted Long channel device" ) 
+`MPRoz( LMLT           ,1.0            ,""            							,"Length Shrinking Parameter" ) 
+`MPRoz( WMLT           ,1.0            ,""            							,"Width Shrinking Parameter" ) 
+`MPRnb( XL             ,0.0            ,""            							,"L offset for channel length due to mask/etch effect" ) 
+`MPRoz( WWIDE          ,10u            ,"m"           							,"W of extracted Wide channel device" ) 
+`MPRnb( XW             ,0.0            ,""            							,"W offset for channel width due to mask/etch effect" ) 
+`MPRnb( LINT           ,0.0            ,""            							,"delta L for IV" ) 
+`MPRnb( LL             ,0.0            ,""            							,"" ) 
+`MPRnb( LW             ,0.0            ,""            							,"" ) 
+`MPRnb( LWL            ,0.0            ,""            							,"" ) 
+`MPRnb( LLN            ,1.0            ,""            							,"" ) 
+`MPRnb( LWN            ,1.0            ,""            							,"" ) 
+`MPRnb( WINT           ,0.0            ,""            							,"delta W for IV" ) 
+`MPRnb( WL             ,0.0            ,""            							,"" ) 
+`MPRnb( WW             ,0.0            ,""            							,"" ) 
+`MPRnb( WWL            ,0.0            ,""            							,"" ) 
+`MPRnb( WLN            ,1.0            ,""            							,"" ) 
+`MPRnb( WWN            ,1.0            ,""            							,"" ) 
+`MPRnb( DLC            ,0.0            ,""            							,"delta L for CV" ) 
+`MPRnb( LLC            ,0.0            ,""            							,"" ) 
+`MPRnb( LWC            ,0.0            ,""            							,"" ) 
+`MPRnb( LWLC           ,0.0            ,""            							,"" ) 
+`MPRnb( DWC            ,0.0            ,""            							,"delta W for CV" ) 
+`MPRnb( WLC            ,0.0            ,""            							,"" ) 
+`MPRnb( WWC            ,0.0            ,""            							,"" ) 
+`MPRnb( WWLC           ,0.0            ,""            							,"" ) 
+`MPRnb( TOXE           ,3.0e-9         ,"m"           							,"Effective gate dielectric thickness relative to SiO2, m" ) 
+`MPRnb( TOXP           ,TOXE           ,"m"           							,"Physical gate dielectric thickness,If not given, TOXP is calculated from TOXE and DTOX" ) 
+													
+`MPRnb( DTOX           ,0.0            ,""            							,"Difference between effective dielectric thickness" ) 
+														
+`MPRnb( NDEP           ,1e24           ,"m^-3"        							,"Channel Doping Concentration for IV" ) 
+`MPRnb( NDEPL1         ,0.0            ,""            							,"Length dependence coefficient of NDEP" ) 
+`MPRoz( NDEPLEXP1      ,1.0            ,""            							,"Length dependence exponent coefficient of NDEP" ) 
+`MPRnb( NDEPL2         ,0.0            ,""            							,"Length dependence of NDEP - For Short Channel Devices" ) 
+`MPRoz( NDEPLEXP2      ,2.0            ,""            							,"Length dependence exponent coefficient of NDEP" ) 
+`MPRnb( NDEPW          ,0.0            ,""            							,"Width dependence coefficient of NDEP" ) 
+`MPRoz( NDEPWEXP       ,1.0            ,""            							,"Width dependence exponent coefficient of NDEP" ) 
+`MPRnb( NDEPWL         ,0.0            ,""            							,"Width-Length dependence coefficient of NDEP" ) 
+`MPRoz( NDEPWLEXP      ,1.0            ,""            							,"Width-Length dependence exponent coefficient of NDEP" ) 
+`MPRnb( LNDEP          ,0.0            ,""            							,"" ) 
+`MPRnb( WNDEP          ,0.0            ,""            							,"" ) 
+`MPRnb( PNDEP          ,0.0            ,""            							,"" ) 
 
-parameter real NGATE 	= 5e25;					// Gate Doping Concentration (m^-3)
-parameter real LNGATE 	= 0.0;
-parameter real WNGATE 	= 0.0;
-parameter real PNGATE 	= 0.0;
+`MPRnb( NDEPCV         ,NDEP           ,"m^-3"        							,"Channel Doping Concentration for CV" ) 
+`MPRnb( NDEPCVL1       ,NDEPL1         ,""            							,"Length dependence coefficient of NDEPCV" ) 
+`MPRoz( NDEPCVLEXP1    ,NDEPLEXP1      ,""            							,"Length dependence exponent coefficient of NDEPCV" ) 
+`MPRnb( NDEPCVL2       ,NDEPL2         ,""            							,"Length dependence coefficient of NDEPCV - For Short Channel Devices" ) 
+`MPRoz( NDEPCVLEXP2    ,NDEPLEXP2      ,""            							,"Length dependence exponent coefficient of NDEPCV" ) 
+`MPRnb( NDEPCVW        ,NDEPW          ,""            							,"Width dependence coefficient of NDEPCV" ) 
+`MPRoz( NDEPCVWEXP     ,NDEPWEXP       ,""            							,"Width dependence exponent coefficient of NDEPCV" ) 
+`MPRnb( NDEPCVWL       ,NDEPWL         ,""            							,"Width-Length dependence coefficient of NDEPCV" ) 
+`MPRoz( NDEPCVWLEXP    ,NDEPWLEXP      ,""            							,"Width-Length dependence exponent coefficient of NDEPCV" ) 
+`MPRnb( LNDEPCV        ,LNDEP          ,""            							,"" ) 
+`MPRnb( WNDEPCV        ,WNDEP          ,""            							,"" ) 
+`MPRnb( PNDEPCV        ,PNDEP          ,""            							,"" ) 
 
-parameter real EASUB 	= 4.05;					// Electron affinity of substrate, eV
-parameter real NI0SUB 	= 1.1e16;				// Intrinsic carrier concentration of the substrate at 300.15K ( m^-3)
-parameter real BG0SUB 	= 1.17; 				// Band gap of substrate at 300.15K, eV
-parameter real EPSRSUB	= 11.9;					// Relative dielectric constant of the channel material
-parameter real EPSROX	= 3.9;					// Relative dielectric constant of the gate dielectric
-parameter real XJ 		= 1.5e-7;				// S/D junction depth
-parameter real LXJ 		= 0.0;
-parameter real WXJ 		= 0.0;
-parameter real PXJ 		= 0.0;
-parameter real VFB 		= -1.0;					// Flat band voltage for IV
-parameter real LVFB 	= 0.0;
-parameter real WVFB 	= 0.0;
-parameter real PVFB 	= 0.0;
+`MPRnb( NGATE          ,5e25           ,"m^-3"        							,"Gate Doping Concentration" ) 
+`MPRnb( LNGATE         ,0.0            ,""            							,"" ) 
+`MPRnb( WNGATE         ,0.0            ,""            							,"" ) 
+`MPRnb( PNGATE         ,0.0            ,""            							,"" ) 
 
-parameter real VFBCV	= VFB;					// Flat band voltage for CV
-parameter real LVFBCV 	= LVFB;
-parameter real WVFBCV 	= WVFB;
-parameter real PVFBCV 	= PVFB;
-parameter real VFBCVL 	= 0.0;					// Length dependence coefficient of VFBCV
-parameter real VFBCVLEXP = 1.0	from (0:inf);			// Length dependence exponent coefficient of VFBCV
-parameter real VFBCVW 	= 0.0;					// Width dependence coefficient of VFBCV
-parameter real VFBCVWEXP = 1.0	from (0:inf);			// Width dependence exponent coefficient of VFBCV
-parameter real VFBCVWL 	= 0.0;					// Width-Length dependence coefficient of VFBCV
-parameter real VFBCVWLEXP = 1.0	from (0:inf);			// Width-Length dependence coefficient of VFBCV
+`MPRnb( EASUB          ,4.05           ,"eV"          							,"Electron affinity of substrate" ) 
+`MPRnb( NI0SUB         ,1.1e16         ,"m^-3"        							,"Intrinsic carrier concentration of the substrate at 300.15K" ) 
+`MPRnb( BG0SUB         ,1.17           ,"eV"          							,"Band gap of substrate at 300.15K" ) 
+`MPRnb( EPSRSUB        ,11.9           ,""            							,"Relative dielectric constant of the channel material" ) 
+`MPRnb( EPSROX         ,3.9            ,""            							,"Relative dielectric constant of the gate dielectric" ) 
+`MPRnb( XJ             ,1.5e-7         ,""            							,"S/D junction depth" ) 
+`MPRnb( LXJ            ,0.0            ,""            							,"" ) 
+`MPRnb( WXJ            ,0.0            ,""            							,"" ) 
+`MPRnb( PXJ            ,0.0            ,""            							,"" ) 
+`MPRnb( LVFB           ,0.0            ,""            							,"" ) 
+`MPRnb( WVFB           ,0.0            ,""            							,"" ) 
+`MPRnb( PVFB           ,0.0            ,""            							,"" ) 
+`MPRnb( VFB            ,-0.5           ,"V"            							,"Flat band voltage " )
+`MPRnb( VFBCV          ,VFB            ,""            							,"Flat band voltage for CV" ) 
+`MPRnb( LVFBCV         ,LVFB           ,""            							,"" ) 
+`MPRnb( WVFBCV         ,WVFB           ,""            							,"" ) 
+`MPRnb( PVFBCV         ,PVFB           ,""            							,"" ) 
+`MPRnb( VFBCVL         ,0.0            ,""            							,"Length dependence coefficient of VFBCV" ) 
+`MPRoz( VFBCVLEXP      ,1.0            ,""            							,"Length dependence exponent coefficient of VFBCV" ) 
+`MPRnb( VFBCVW         ,0.0            ,""            							,"Width dependence coefficient of VFBCV" ) 
+`MPRoz( VFBCVWEXP      ,1.0            ,""            							,"Width dependence exponent coefficient of VFBCV" ) 
+`MPRnb( VFBCVWL        ,0.0            ,""            							,"Width-Length dependence coefficient of VFBCV" ) 
+`MPRoz( VFBCVWLEXP     ,1.0            ,""           							,"Width-Length dependence coefficient of VFBCV" ) 
 
 //Diode parameters
-parameter integer PERMOD	= 1 from [0:1];		// Whether PS/PD (when given) include gate-edge perimeter
-parameter real AS		= 0.0 from [0:inf);     // Source to Substrate Junction Area
-parameter real AD		= 0.0 from [0:inf);     // Drain to Substrate Junction Area
-parameter real PS		= 0.0 from [0:inf);     // Source to Substrate Junction Perimeter
-parameter real PD		= 0.0 from [0:inf);     // Drain to Substrate Junction Perimeter
-parameter real DWJ		= DWC;					// delta W for S/D junctions
-
-// Rd, Rs related Parameter
-parameter real VFBSDOFF	= 0.0;
-parameter real NRS		= 1.0 from [0:inf);		// Number of squares in source
-parameter real NRD		= 1.0 from [0:inf);		// Number of squares in drain
-parameter integer MINZ	= 0   from [0:1];		// Minimize either D or S
+`MPIcc( PERMOD         ,1              ,""            ,0           ,1           ,"Whether PS/PD (when given) include gate-edge perimeter" ) 
+`MPRnb( DWJ            ,DWC            ,""            							,"delta W for S/D junctions" ) 
 
 // Short Channel Effects
-parameter real NSD 		= 1e26;					// S/D Doping Concentration (m^-3)
-parameter real LNSD 	= 0.0;
-parameter real WNSD 	= 0.0;
-parameter real PNSD 	= 0.0;
+`MPRnb( NSD            ,1e26           ,"m^-3"        							,"S/D Doping Concentration" ) 
+`MPRnb( LNSD           ,0.0            ,""            							,"" ) 
+`MPRnb( WNSD           ,0.0            ,""            							,"" ) 
+`MPRnb( PNSD           ,0.0            ,""            							,"" ) 
 
-parameter real DVTP0 	= 0.0;				// DITS
-parameter real LDVTP0 	= 0;
-parameter real WDVTP0 	= 0;
-parameter real PDVTP0 	= 0;
-parameter real DVTP1 	= 0.0;					// DITS
-parameter real LDVTP1 	= 0;
-parameter real WDVTP1 	= 0;
-parameter real PDVTP1 	= 0;
-parameter real DVTP2 	= 0.0;					// DITS
-parameter real LDVTP2 	= 0;
-parameter real WDVTP2 	= 0;
-parameter real PDVTP2 	= 0;
-parameter real DVTP3 	= 0.0;					// DITS
-parameter real LDVTP3 	= 0;
-parameter real WDVTP3 	= 0;
-parameter real PDVTP3 	= 0;
-parameter real DVTP4 	= 0.0;					// DITS
-parameter real LDVTP4 	= 0;
-parameter real WDVTP4 	= 0;
-parameter real PDVTP4 	= 0;
-parameter real DVTP5 	= 0.0;					// DITS
-parameter real LDVTP5 	= 0;
-parameter real WDVTP5 	= 0;
-parameter real PDVTP5 	= 0;
+`MPRnb( DELVT0         ,0.0            ,""            							,"" ) 
+`MPRnb( DVTP0          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP0         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP0         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP0         ,0              ,""            							,"" ) 
+`MPRnb( DVTP1          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP1         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP1         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP1         ,0              ,""            							,"" ) 
+`MPRnb( DVTP2          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP2         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP2         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP2         ,0              ,""            							,"" ) 
+`MPRnb( DVTP3          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP3         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP3         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP3         ,0              ,""            							,"" ) 
+`MPRnb( DVTP4          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP4         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP4         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP4         ,0              ,""            							,"" ) 
+`MPRnb( DVTP5          ,0.0            ,""            							,"DITS" ) 
+`MPRnb( LDVTP5         ,0              ,""            							,"" ) 
+`MPRnb( WDVTP5         ,0              ,""            							,"" ) 
+`MPRnb( PDVTP5         ,0              ,""            							,"" ) 
 
-parameter real PHIN 	= 0.045;				// Nonuniform vertical doping effect on surface potential, V
-parameter real LPHIN 	= 0.0;
-parameter real WPHIN 	= 0.0;
-parameter real PPHIN 	= 0.0;
+`MPRnb( PHIN           ,0.045          ,"V"           							,"Nonuniform vertical doping effect on surface potential, V" ) 
+`MPRnb( LPHIN          ,0.0            ,""            							,"" ) 
+`MPRnb( WPHIN          ,0.0            ,""            							,"" ) 
+`MPRnb( PPHIN          ,0.0            ,""            							,"" ) 
 
-parameter real ETA0 	= 0.08;					// DIBL coefficient
-parameter real LETA0	= 0.0;
-parameter real WETA0 	= 0.0;
-parameter real PETA0 	= 0.0;
-parameter real DSUB 	= 1.0;					// Length scaling exponent for DIBL
-parameter real ETAB 	= -0.07;				// Body bias coefficient for subthreshold DIBL effect
-parameter real ETABEXP 	= 1.0	from (0:inf);			// Exponent coefficient of ETAB
-parameter real LETAB 	= 0.0;
-parameter real WETAB 	= 0.0;
-parameter real PETAB 	= 0.0;
+`MPRnb( ETA0           ,0.08           ,""            							,"DIBL coefficient" ) 
+`MPRnb( LETA0          ,0.0            ,""            							,"" ) 
+`MPRnb( WETA0          ,0.0            ,""            							,"" ) 
+`MPRnb( PETA0          ,0.0            ,""            							,"" ) 
+`MPRnb( ETA0R          ,ETA0           ,""            							,"DIBL coefficient" ) 
+`MPRnb( LETA0R         ,LETA0          ,""            							,"" ) 
+`MPRnb( WETA0R         ,WETA0          ,""            							,"" ) 
+`MPRnb( PETA0R         ,PETA0          ,""            							,"" ) 
+`MPRnb( DSUB           ,1.0            ,""            							,"Length scaling exponent for DIBL" ) 
+`MPRnb( ETAB           ,-0.07          ,""            							,"Body bias coefficient for subthreshold DIBL effect" ) 
+`MPRoz( ETABEXP        ,1.0            ,""            							,"Exponent coefficient of ETAB" ) 
+`MPRnb( LETAB          ,0.0            ,""            							,"" ) 
+`MPRnb( WETAB          ,0.0            ,""            							,"" ) 
+`MPRnb( PETAB          ,0.0            ,""            							,"" ) 
 
-parameter real K2 	= 0.0;					// Vth shift due to Vertical Non-uniform doping
-parameter real K2L 	= 0.0;					// Length dependence coefficient of K2
-parameter real K2LEXP 	= 1.0	from (0:inf);			// Length dependence exponent coefficient of K2
-parameter real K2W 	= 0.0;					// Width dependence coefficient of K2
-parameter real K2WEXP 	= 1.0	from (0:inf);			// Width dependence exponent coefficient of K2
-parameter real K2WL 	= 0.0;					// Width-Length dependence coefficient of K2
-parameter real K2WLEXP 	= 1.0	from (0:inf);			// Width-Length dependence exponent coefficient of K2
-parameter real LK2 	= 0.0;
-parameter real WK2 	= 0.0;
-parameter real PK2 	= 0.0;
+`MPRnb( K1             ,0.0            ,""            							,"First-order body-bias Vth shift due to Vertical Non-uniform doping" ) 
+`MPRnb( K1L            ,0.0            ,""            							,"Length dependence coefficient of K1" ) 
+`MPRoz( K1LEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of K1" ) 
+`MPRnb( K1W            ,0.0            ,""            							,"Width dependence coefficient of K1" ) 
+`MPRoz( K1WEXP         ,1.0            ,""            							,"Width dependence exponent coefficient of K1" ) 
+`MPRnb( K1WL           ,0.0            ,""            							,"Width-Length dependence coefficient of K1" ) 
+`MPRoz( K1WLEXP        ,1.0            ,""           							,"Width-Length dependence exponent coefficient of K1" ) 
+`MPRnb( LK1            ,0.0            ,""            							,"" ) 
+`MPRnb( WK1            ,0.0            ,""            							,"" ) 
+`MPRnb( PK1            ,0.0            ,""            							,"" ) 
+`MPRnb( K2             ,0.0            ,""            							,"Vth shift due to Vertical Non-uniform doping" ) 
+`MPRnb( K2L            ,0.0            ,""            							,"Length dependence coefficient of K2" ) 
+`MPRoz( K2LEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of K2" ) 
+`MPRnb( K2W            ,0.0            ,""            							,"Width dependence coefficient of K2" ) 
+`MPRoz( K2WEXP         ,1.0            ,""            							,"Width dependence exponent coefficient of K2" ) 
+`MPRnb( K2WL           ,0.0            ,""            							,"Width-Length dependence coefficient of K2" ) 
+`MPRoz( K2WLEXP        ,1.0            ,""            							,"Width-Length dependence exponent coefficient of K2" ) 
+`MPRnb( LK2            ,0.0            ,""            							,"" ) 
+`MPRnb( WK2            ,0.0            ,""            							,"" ) 
+`MPRnb( PK2            ,0.0            ,""            							,"" ) 
 
 // Quantum Mechanical Effects
-parameter real ADOS 	= 0.0 	from [0:inf);	// Quantum mechanical effect prefactor cum switch in inversion
-parameter real BDOS 	= 1.0 	from [0:inf);	// Charge centroid parameter - slope of CV curve under QME in inversion
-parameter real QM0 		= 1.0e-3 from (0:inf);	// Charge centroid parameter - starting point for QME in inversion
-parameter real ETAQM	= 0.54	from [0:inf);	// Bulk charge coefficient for charge centroid in inversion
+`MPRcz( ADOS           ,0.0            ,""            							,"Quantum mechanical effect prefactor cum switch in inversion" ) 
+`MPRcz( BDOS           ,1.0            ,""            							,"Charge centroid parameter - slope of CV curve under QME in inversion" ) 
+`MPRoz( QM0            ,1.0e-3         ,""            							,"Charge centroid parameter - starting point for QME in inversion" ) 
+`MPRcz( ETAQM          ,0.54           ,""            							,"Bulk charge coefficient for charge centroid in inversion" ) 
 
 //Subthreshold Swing Factor
-parameter real CIT      = 0.0;			// parameter for interface trap
-parameter real LCIT 	= 0.0;
-parameter real WCIT 	= 0.0;
-parameter real PCIT 	= 0.0;
+`MPRnb( CIT            ,0.0            ,""            							,"parameter for interface trap" ) 
+`MPRnb( LCIT           ,0.0            ,""            							,"" ) 
+`MPRnb( WCIT           ,0.0            ,""            							,"" ) 
+`MPRnb( PCIT           ,0.0            ,""            							,"" ) 
 
 
-parameter real NFACTOR 		= 0.0;				// Sub-threshold slope factor
-parameter real NFACTORL 	= 0.0;			// Length dependence coefficient of NFACTOR
-parameter real NFACTORLEXP 	= 1.0	from (0:inf);	// Length dependence exponent coefficient of NFACTOR
-parameter real NFACTORW 	= 0.0;			// Width dependence coefficient of NFACTOR
-parameter real NFACTORWEXP 	= 1.0	from (0:inf);	// Width dependence exponent coefficient of NFACTOR
-parameter real NFACTORWL 	= 0.0;			// Width-Length dependence coefficient of NFACTOR
-parameter real NFACTORWLEXP 	= 1.0	from (0:inf);	// Width-Length dependence exponent coefficient of NFACTOR
-parameter real LNFACTOR 	= 0.0;
-parameter real WNFACTOR 	= 0.0;
-parameter real PNFACTOR 	= 0.0;
+`MPRnb( NFACTOR        ,0.0            ,""            							,"Sub-threshold slope factor" ) 
+`MPRnb( NFACTORL       ,0.0            ,""            							,"Length dependence coefficient of NFACTOR" ) 
+`MPRoz( NFACTORLEXP    ,1.0            ,""            							,"Length dependence exponent coefficient of NFACTOR" ) 
+`MPRnb( NFACTORW       ,0.0            ,""            							,"Width dependence coefficient of NFACTOR" ) 
+`MPRoz( NFACTORWEXP    ,1.0            ,""            							,"Width dependence exponent coefficient of NFACTOR" ) 
+`MPRnb( NFACTORWL      ,0.0            ,""           						 	,"Width-Length dependence coefficient of NFACTOR" ) 
+`MPRoz( NFACTORWLEXP   ,1.0            ,""            							,"Width-Length dependence exponent coefficient of NFACTOR" ) 
+`MPRnb( LNFACTOR       ,0.0            ,""            							,"" ) 
+`MPRnb( WNFACTOR       ,0.0            ,""            							,"" ) 
+`MPRnb( PNFACTOR       ,0.0            ,""            							,"" ) 
 
-parameter real CDSCD 	= 1e-9;				// drain-bias sensitivity of sub-threshold slope
-parameter real CDSCDL 	= 0.0;				// Length dependence coefficient of CDSCD
-parameter real CDSCDLEXP = 1.0	from (0:inf);		// Length dependence exponent coefficient of CDSCD
-parameter real LCDSCD 	= 0.0;
-parameter real WCDSCD 	= 0.0;
-parameter real PCDSCD 	= 0.0;
-parameter real CDSCB 	= 0.0;				// body-bias sensitivity of sub-threshold slope
-parameter real CDSCBL 	= 0.0;				// Length dependence coefficient of CDSCB
-parameter real CDSCBLEXP = 1.0	from (0:inf);		// Length dependence exponent coefficient of CDSCB
-parameter real LCDSCB 	= 0.0;
-parameter real WCDSCB 	= 0.0;
-parameter real PCDSCB 	= 0.0;
+`MPRnb( CDSCD          ,1e-9           ,""            							,"drain-bias sensitivity of sub-threshold slope" ) 
+`MPRnb( CDSCDL         ,0.0            ,""            							,"Length dependence coefficient of CDSCD" ) 
+`MPRoz( CDSCDLEXP      ,1.0            ,""            							,"Length dependence exponent coefficient of CDSCD" ) 
+`MPRnb( LCDSCD         ,0.0            ,""            							,"" ) 
+`MPRnb( WCDSCD         ,0.0            ,""            							,"" ) 
+`MPRnb( PCDSCD         ,0.0            ,""            							,"" ) 
+`MPRnb( CDSCDR         ,CDSCD          ,""            							,"drain-bias sensitivity of sub-threshold slope" ) 
+`MPRnb( CDSCDLR        ,CDSCDL         ,""            							,"Length dependence coefficient of CDSCD" ) 
+`MPRnb( LCDSCDR        ,LCDSCD         ,""            							,"" ) 
+`MPRnb( WCDSCDR        ,WCDSCD         ,""            							,"" ) 
+`MPRnb( PCDSCDR        ,PCDSCD         ,""            							,"" ) 
+`MPRnb( CDSCB          ,0.0            ,""            							,"body-bias sensitivity of sub-threshold slope" ) 
+`MPRnb( CDSCBL         ,0.0            ,""            							,"Length dependence coefficient of CDSCB" ) 
+`MPRoz( CDSCBLEXP      ,1.0            ,""            							,"Length dependence exponent coefficient of CDSCB" ) 
+`MPRnb( LCDSCB         ,0.0            ,""            							,"" ) 
+`MPRnb( WCDSCB         ,0.0            ,""            							,"" ) 
+`MPRnb( PCDSCB         ,0.0            ,""            							,"" ) 
 
 //Drain Saturation Voltage
-parameter real VSAT		= 1e5;					// Saturation Velocity m/s
-parameter real LVSAT		= 0.0;
-parameter real WVSAT		= 0.0;
-parameter real PVSAT		= 0.0;
-parameter real VSATL		= 0.0;					// Length dependence coefficient of of VSAT
-parameter real VSATLEXP		= 1.0	from (0:inf);			// Length dependence exponent coefficient of VSAT
-parameter real VSATW		= 0.0;					// Width dependence coefficient of of VSAT
-parameter real VSATWEXP		= 1.0	from (0:inf);			// Width dependence exponent coefficient of of VSAT
-parameter real VSATWL		= 0.0;					// Width-Length dependence coefficient of of VSAT
-parameter real VSATWLEXP	= 1.0	from (0:inf);			// Width-Length dependence exponent coefficient of of VSAT
-parameter real DELTA		= 0.125;				// Smoothing function factor for Vdsat
-parameter real LDELTA		= 0.0;
-parameter real WDELTA		= 0.0;
-parameter real PDELTA		= 0.0;
-parameter real DELTAL		= 0.0;					// Length dependence coefficient of DELTA
-parameter real DELTALEXP 	= 1.0	from (0:inf);			// Length dependence exponent coefficient of DELTA
+`MPRnb( VSAT           ,1e5            ,"m/s"         							,"Saturation Velocity" ) 
+`MPRnb( LVSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( WVSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( PVSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( VSATL          ,0.0            ,""            							,"Length dependence coefficient of of VSAT" ) 
+`MPRoz( VSATLEXP       ,1.0            ,""            							,"Length dependence exponent coefficient of VSAT" ) 
+`MPRnb( VSATW          ,0.0            ,""            							,"Width dependence coefficient of of VSAT" ) 
+`MPRoz( VSATWEXP       ,1.0            ,""            							,"Width dependence exponent coefficient of of VSAT" ) 
+`MPRnb( VSATWL         ,0.0            ,""            							,"Width-Length dependence coefficient of of VSAT" ) 
+`MPRoz( VSATWLEXP      ,1.0            ,""            							,"Width-Length dependence exponent coefficient of of VSAT" ) 
+`MPRnb( VSATR          ,VSAT           ,"m/s"         							,"Saturation Velocity" ) 
+`MPRnb( LVSATR         ,LVSAT          ,""            							,"" ) 
+`MPRnb( WVSATR         ,WVSAT          ,""            							,"" ) 
+`MPRnb( PVSATR         ,PVSAT          ,""            							,"" ) 
 
-parameter real VSATCV		= VSAT;					// VSAT parameter for CV
-parameter real LVSATCV		= LVSAT;
-parameter real WVSATCV		= WVSAT;
-parameter real PVSATCV		= PVSAT;
-parameter real VSATCVL		= VSATL;
-parameter real VSATCVLEXP 	= VSATLEXP	from (0:inf);
-parameter real VSATCVW		= VSATW;
-parameter real VSATCVWEXP 	= VSATWEXP	from (0:inf);
-parameter real VSATCVWL		= VSATWL;
-parameter real VSATCVWLEXP 	= VSATWLEXP	from (0:inf);
+`MPRnb( DELTA          ,0.125          ,""            							,"Smoothing function factor for Vdsat" ) 
+`MPRnb( LDELTA         ,0.0            ,""            							,"" ) 
+`MPRnb( WDELTA         ,0.0            ,""            							,"" ) 
+`MPRnb( PDELTA         ,0.0            ,""            							,"" ) 
+`MPRnb( DELTAL         ,0.0            ,""            							,"Length dependence coefficient of DELTA" ) 
+`MPRoz( DELTALEXP      ,1.0            ,""            							,"Length dependence exponent coefficient of DELTA" ) 
+
+`MPRnb( VSATCV         ,VSAT           ,""            							,"VSAT parameter for CV" ) 
+`MPRnb( LVSATCV        ,LVSAT          ,""            							,"" ) 
+`MPRnb( WVSATCV        ,WVSAT          ,""            							,"" ) 
+`MPRnb( PVSATCV        ,PVSAT          ,""            							,"" ) 
+`MPRnb( VSATCVL        ,VSATL          ,""            							,"" ) 
+`MPRoz( VSATCVLEXP     ,VSATLEXP       ,""            							,"" ) 
+`MPRnb( VSATCVW        ,VSATW          ,""            							,"" ) 
+`MPRoz( VSATCVWEXP     ,VSATWEXP       ,""            							,"" ) 
+`MPRnb( VSATCVWL       ,VSATWL         ,""            							,"" ) 
+`MPRoz( VSATCVWLEXP    ,VSATWLEXP      ,""            							,"" ) 
 
 // Mobility Degradation
-parameter real U0		= 67.0e-3;			// units are m2/Vs
-parameter real U0L		= 0.0;				// Length dependence coefficient of U0L
-parameter real U0LEXP		= 1.0	from (0:inf);		// Length dependence exponent coefficient of U0L
-parameter real LU0		= 0.0;
-parameter real WU0		= 0.0;
-parameter real PU0		= 0.0;
 
-parameter real ETAMOB		= 1.0;				// Effective field parameter (should be kept close to 1)
+`MPRoo( UP1            ,0.0            ,""            ,-inf        ,inf         ,"Mobility channel length coefficent" ) 
+`MPRoo( LP1            ,1.0e-8         ,""            ,-inf        ,inf         ,"Mobility channel length exponential coefficent" ) 
+`MPRoo( UP2            ,0.0            ,""            ,-inf        ,inf         ,"Mobility channel length coefficent" ) 
+`MPRoo( LP2            ,1.0e-8         ,""            ,-inf        ,inf         ,"Mobility channel length exponential coefficent" ) 
+`MPRnb( MULU0          ,1.0            ,""            							,"" ) 
+`MPRnb( U0             ,67.0e-3        ,"m2/Vs"       							,"" ) 
+`MPRnb( U0L            ,0.0            ,""            							,"Length dependence coefficient of U0L" ) 
+`MPRoz( U0LEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of U0L" ) 
+`MPRnb( LU0            ,0.0            ,""            							,"" ) 
+`MPRnb( WU0            ,0.0            ,""            							,"" ) 
+`MPRnb( PU0            ,0.0            ,""            							,"" ) 
+`MPRnb( U0R            ,U0             ,"m2/Vs"       							,"" ) 
+`MPRnb( LU0R           ,LU0            ,""            							,"" ) 
+`MPRnb( WU0R           ,WU0            ,""            							,"" ) 
+`MPRnb( PU0R           ,PU0            ,""            							,"" ) 
 
-parameter real UA		= 0.001;			// Mobility reduction coefficient
-parameter real UAL		= 0.0;				// Length dependence coefficient of  UA
-parameter real UALEXP		= 1.0	from (0:inf);		// Length dependence exponent coefficient of  UA
-parameter real UAW		= 0.0;				// Width dependence coefficient of UA
-parameter real UAWEXP		= 1.0	from (0:inf);		// Width dependence exponent coefficient of UA
-parameter real UAWL		= 0.0;				// Width-Length dependence coefficient of UA
-parameter real UAWLEXP		= 1.0	from (0:inf);		// Width-Length dependence coefficient of UA
-parameter real LUA		= 0.0;
-parameter real WUA		= 0.0;
-parameter real PUA		= 0.0;
+`MPRnb( ETAMOB         ,1.0            ,""            							,"Effective field parameter (should be kept close to 1)" ) 
 
-parameter real EU		= 1.5;				// Mobility reduction exponent
-parameter real LEU		= 0.0;
-parameter real WEU		= 0.0;
-parameter real PEU		= 0.0;
-parameter real EUL		= 0.0;					// Length dependence coefficient of EU
-parameter real EULEXP		= 1.0	from (0:inf);			// Length dependence exponent coefficient of EU
-parameter real EUW		= 0.0;					// Width dependence coefficient of EU
-parameter real EUWEXP		= 1.0	from (0:inf);			// Width dependence exponent coefficient of EU
-parameter real EUWL		= 0.0;					// Width-Length dependence coefficient of EU
-parameter real EUWLEXP		= 1.0	from (0:inf);			// Width-Length dependence coefficient of EU
+`MPRnb( UA             ,0.001          ,""            							,"Mobility reduction coefficient" ) 
+`MPRnb( UAL            ,0.0            ,""            							,"Length dependence coefficient of  UA" ) 
+`MPRoz( UALEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of  UA" ) 
+`MPRnb( UAW            ,0.0            ,""            							,"Width dependence coefficient of UA" ) 
+`MPRoz( UAWEXP         ,1.0            ,""            							,"Width dependence exponent coefficient of UA" ) 
+`MPRnb( UAWL           ,0.0            ,""            							,"Width-Length dependence coefficient of UA" ) 
+`MPRoz( UAWLEXP        ,1.0            ,""            							,"Width-Length dependence coefficient of UA" ) 
+`MPRnb( LUA            ,0.0            ,""           		 					,"" ) 
+`MPRnb( WUA            ,0.0            ,""            							,"" ) 
+`MPRnb( PUA            ,0.0            ,""            							,"" ) 
+`MPRnb( UAR            ,UA             ,""            							,"Mobility reduction coefficient" ) 
+`MPRnb( LUAR           ,LUA            ,""            							,"" ) 
+`MPRnb( WUAR           ,WUA            ,""            							,"" ) 
+`MPRnb( PUAR           ,PUA            ,""            							,"" ) 
 
-parameter real UD		= 0.001;				// Coulombic scattering parameter
-parameter real UDL		= 0.0;					// Length dependence coefficient of UD
-parameter real UDLEXP		= 1.0	from (0:inf);			// Length dependence exponent coefficient of UD
-parameter real LUD		= 0.0;
-parameter real WUD		= 0.0;
-parameter real PUD		= 0.0;
+`MPRnb( EU             ,1.5            ,""            							,"Mobility reduction exponent" ) 
+`MPRnb( LEU            ,0.0            ,""            							,"" ) 
+`MPRnb( WEU            ,0.0            ,""            							,"" ) 
+`MPRnb( PEU            ,0.0            ,""            							,"" ) 
+`MPRnb( EUL            ,0.0            ,""            							,"Length dependence coefficient of EU" ) 
+`MPRoz( EULEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of EU" ) 
+`MPRnb( EUW            ,0.0            ,""            							,"Width dependence coefficient of EU" ) 
+`MPRoz( EUWEXP         ,1.0            ,""            							,"Width dependence exponent coefficient of EU" ) 
+`MPRnb( EUWL           ,0.0            ,""            							,"Width-Length dependence coefficient of EU" ) 
+`MPRoz( EUWLEXP        ,1.0            ,""            							,"Width-Length dependence coefficient of EU" ) 
 
-parameter real UCS		= 2.0;					// Coulombic scattering parameter
-parameter real LUCS		= 0.0;
-parameter real WUCS		= 0.0;
-parameter real PUCS		= 0.0;
+`MPRnb( UD             ,0.001          ,""            							,"Coulombic scattering parameter" ) 
+`MPRnb( UDL            ,0.0            ,""            							,"Length dependence coefficient of UD" ) 
+`MPRoz( UDLEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of UD" ) 
+`MPRnb( LUD            ,0.0            ,""            							,"" ) 
+`MPRnb( WUD            ,0.0            ,""            							,"" ) 
+`MPRnb( PUD            ,0.0            ,""            							,"" ) 
+`MPRnb( UDR            ,UD             ,""            							,"Coulombic scattering parameter" ) 
+`MPRnb( LUDR           ,LUD            ,""            							,"" ) 
+`MPRnb( WUDR           ,WUD            ,""            							,"" ) 
+`MPRnb( PUDR           ,PUD            ,""            							,"" ) 
 
+`MPRnb( UCS            ,2.0            ,""            							,"Coulombic scattering parameter" ) 
+`MPRnb( LUCS           ,0.0            ,""            							,"" ) 
+`MPRnb( WUCS           ,0.0            ,""            							,"" ) 
+`MPRnb( PUCS           ,0.0            ,""            							,"" ) 
+`MPRnb( UCSR           ,UCS            ,""            							,"Coulombic scattering parameter" ) 
+`MPRnb( LUCSR          ,LUCS           ,""            							,"" ) 
+`MPRnb( WUCSR          ,WUCS           ,""            							,"" ) 
+`MPRnb( PUCSR          ,PUCS           ,""            							,"" ) 
 
-parameter real UC		= 0.0;					// Mobility reduction with body bias
-parameter real UCL		= 0.0;					// Length dependence coefficient of UC
-parameter real UCLEXP		= 1.0	from (0:inf);			// Length dependence exponent coefficient of UC
-parameter real UCW		= 0.0;					// Width dependence coefficient of UC
-parameter real UCWEXP		= 1.0	from (0:inf);			// Width dependence exponent coefficient of UC
-parameter real UCWL		= 0.0;					// Width-Length dependence coefficient of UC
-parameter real UCWLEXP		= 1.0	from (0:inf);			// Width-Length dependence exponent coefficient of UC
-parameter real LUC		= 0.0;
-parameter real WUC		= 0.0;
-parameter real PUC		= 0.0;
+`MPRnb( UC             ,0.0            ,""            							,"Mobility reduction with body bias" ) 
+`MPRnb( UCL            ,0.0            ,""            							,"Length dependence coefficient of UC" ) 
+`MPRoz( UCLEXP         ,1.0            ,""            							,"Length dependence exponent coefficient of UC" ) 
+`MPRnb( UCW            ,0.0            ,""            							,"Width dependence coefficient of UC" ) 
+`MPRoz( UCWEXP         ,1.0            ,""            							,"Width dependence exponent coefficient of UC" ) 
+`MPRnb( UCWL           ,0.0            ,""            							,"Width-Length dependence coefficient of UC" ) 
+`MPRoz( UCWLEXP        ,1.0            ,""            							,"Width-Length dependence exponent coefficient of UC" ) 
+`MPRnb( LUC            ,0.0            ,""           							,"" ) 
+`MPRnb( WUC            ,0.0            ,""            							,"" ) 
+`MPRnb( PUC            ,0.0            ,""            							,"" ) 
+`MPRnb( UCR            ,UC             ,""            							,"Mobility reduction with body bias" ) 
+`MPRnb( LUCR           ,LUC            ,""            							,"" ) 
+`MPRnb( WUCR           ,WUC            ,""            							,"" ) 
+`MPRnb( PUCR           ,PUC            ,""            							,"" ) 
 
 // Channel Length Modulation
-parameter real PCLM		    = 0.0;				// CLM prefactor
-parameter real PCLML		= 0.0;				// Length dependence coefficient of PCLM
-parameter real PCLMLEXP 	= 1.0 from (0:inf);		// Length dependence exponent coefficient of PCLM
-parameter real LPCLM		= 0.0;
-parameter real WPCLM		= 0.0;
-parameter real PPCLM		= 0.0;
+`MPRnb( PCLM           ,0.0            ,""            							,"CLM prefactor" ) 
+`MPRnb( PCLML          ,0.0            ,""            							,"Length dependence coefficient of PCLM" ) 
+`MPRoz( PCLMLEXP       ,1.0            ,""            							,"Length dependence exponent coefficient of PCLM" ) 
+`MPRnb( LPCLM          ,0.0            ,""            							,"" ) 
+`MPRnb( WPCLM          ,0.0            ,""            							,"" ) 
+`MPRnb( PPCLM          ,0.0            ,""            							,"" ) 
+`MPRnb( PCLMR          ,PCLM           ,""            							,"CLM prefactor" ) 
+`MPRnb( LPCLMR         ,LPCLM          ,""            							,"" ) 
+`MPRnb( WPCLMR         ,WPCLM          ,""            							,"" ) 
+`MPRnb( PPCLMR         ,PPCLM          ,""            							,"" ) 
 
-parameter real PCLMG		= 0.0;				// CLM prefactor gate voltage dependence
+`MPRnb( PCLMG          ,0.0            ,""            							,"CLM prefactor gate voltage dependence" ) 
 
-parameter real PCLMCV		= PCLM;				// CLM parameter for CV
-parameter real PCLMCVL		= PCLML;
-parameter real PCLMCVLEXP	= PCLMLEXP from (0:inf);
-parameter real LPCLMCV		= LPCLM;
-parameter real WPCLMCV		= WPCLM;
-parameter real PPCLMCV		= PPCLM;
+`MPRnb( PCLMCV         ,PCLM           ,""            							,"CLM parameter for CV" ) 
+`MPRnb( PCLMCVL        ,PCLML          ,""            							,"" ) 
+`MPRoz( PCLMCVLEXP     ,PCLMLEXP       ,""            							,"" ) 
+`MPRnb( LPCLMCV        ,LPCLM          ,""            							,"" ) 
+`MPRnb( WPCLMCV        ,WPCLM          ,""            							,"" ) 
+`MPRnb( PPCLMCV        ,PPCLM          ,""            							,"" ) 
 
-parameter real PSCBE1 	= 4.24e8;				// Substrate current body-effect coeff
-parameter real LPSCBE1 	= 0.0;
-parameter real WPSCBE1 	= 0.0;
-parameter real PPSCBE1 	= 0.0;
-parameter real PSCBE2 	= 1.0e-8;				// Substrate current body-effect coeff
-parameter real LPSCBE2 	= 0.0;
-parameter real WPSCBE2 	= 0.0;
-parameter real PPSCBE2 	= 0.0;
+`MPRnb( PSCBE1         ,4.24e8         ,""            							,"Substrate current body-effect coeff" ) 
+`MPRnb( LPSCBE1        ,0.0            ,""            							,"" ) 
+`MPRnb( WPSCBE1        ,0.0            ,""            							,"" ) 
+`MPRnb( PPSCBE1        ,0.0            ,""            							,"" ) 
+`MPRnb( PSCBE2         ,1.0e-8         ,""            							,"Substrate current body-effect coeff" ) 
+`MPRnb( LPSCBE2        ,0.0            ,""            							,"" ) 
+`MPRnb( WPSCBE2        ,0.0            ,""            							,"" ) 
+`MPRnb( PPSCBE2        ,0.0            ,""            							,"" ) 
 
-parameter real PDITS 	= 0.0;   			// Coefficient for drain-induced Vth shifts
-parameter real LPDITS 	= 0.0;
-parameter real WPDITS 	= 0.0;
-parameter real PPDITS 	= 0.0;
-parameter real PDITSL 	= 0.0 from [0:inf);		// L dep of drain-induced Vth shifts
-parameter real PDITSD 	= 0.0;					// Vds dep of drain-induced Vth shifts
-parameter real LPDITSD 	= 0.0;
-parameter real WPDITSD 	= 0.0;
-parameter real PPDITSD 	= 0.0;
+`MPRnb( PDITS          ,0.0            ,""            							,"Coefficient for drain-induced Vth shifts" ) 
+`MPRnb( LPDITS         ,0.0            ,""            							,"" ) 
+`MPRnb( WPDITS         ,0.0            ,""            							,"" ) 
+`MPRnb( PPDITS         ,0.0            ,""            							,"" ) 
+`MPRcz( PDITSL         ,0.0            ,""            							,"L dep of drain-induced Vth shifts" ) 
+`MPRnb( PDITSD         ,0.0            ,""            							,"Vds dep of drain-induced Vth shifts" ) 
+`MPRnb( LPDITSD        ,0.0            ,""            							,"" ) 
+`MPRnb( WPDITSD        ,0.0            ,""            							,"" ) 
+`MPRnb( PPDITSD        ,0.0            ,""            							,"" ) 
 
 // S/D Series Resistance
-parameter real RSH 	= 0.0 from [0:inf);		// Source-drain sheet resistance [Ohm]
-parameter real PRWG 	= 1.0;					// gate bias dependence of S/D extension resistance, V-1
-parameter real LPRWG 	= 0.0;
-parameter real WPRWG 	= 0.0;
-parameter real PPRWG 	= 0.0;
-parameter real PRWB 	= 0.0;					// Body bias dependence of resistance
-parameter real LPRWB 	= 0.0;
-parameter real WPRWB 	= 0.0;
-parameter real PPRWB 	= 0.0;
-parameter real PRWBL 	= 0.0;					// Length dependence coefficient of PPRWB
-parameter real PRWBLEXP	= 1.0	from (0:inf);			// Length dependence exponent coefficient of PPRWB
-parameter real WR 	= 1.0;					// W dependence parameter of S/D extension resistance
-parameter real LWR 	= 0.0;
-parameter real WWR 	= 0.0;
-parameter real PWR 	= 0.0;
+`MPRcz( RSH            ,0.0            ,""            							,"Source-drain sheet resistance" ) 
+`MPRnb( PRWG           ,1.0            ,""            							,"gate bias dependence of S/D extension resistance" ) 
+`MPRnb( LPRWG          ,0.0            ,""            							,"" ) 
+`MPRnb( WPRWG          ,0.0            ,""            							,"" ) 
+`MPRnb( PPRWG          ,0.0            ,""            							,"" ) 
+`MPRnb( PRWB           ,0.0            ,""            							,"Body bias dependence of resistance" ) 
+`MPRnb( LPRWB          ,0.0            ,""            							,"" ) 
+`MPRnb( WPRWB          ,0.0            ,""            							,"" ) 
+`MPRnb( PPRWB          ,0.0            ,""            							,"" ) 
+`MPRnb( PRWBL          ,0.0            ,""            							,"Length dependence coefficient of PPRWB" ) 
+`MPRoz( PRWBLEXP       ,1.0            ,""            							,"Length dependence exponent coefficient of PPRWB" ) 
+`MPRnb( WR             ,1.0            ,""            							,"W dependence parameter of S/D extension resistance" ) 
+`MPRnb( LWR            ,0.0            ,""            							,"" ) 
+`MPRnb( WWR            ,0.0            ,""            							,"" ) 
+`MPRnb( PWR            ,0.0            ,""            							,"" ) 
 
-parameter real RSWMIN 	= 0.0;					// Source Resistance per unit width at high Vgs (RDSMOD=1)
-parameter real LRSWMIN 	= 0.0;
-parameter real WRSWMIN 	= 0.0;
-parameter real PRSWMIN 	= 0.0;
-parameter real RSW 	= 10.0;					// zero bias Source Resistance (RDSMOD=1)
-parameter real LRSW 	= 0.0;
-parameter real WRSW 	= 0.0;
-parameter real PRSW 	= 0.0;
-parameter real RSWL 	= 0.0;					// Geometrical scaling of RSW (RDSMOD=1)
-parameter real RSWLEXP 	= 1.0	from (0:inf);			// Geometrical scaling of RSW (RDSMOD=1)
+`MPRnb( RSWMIN         ,0.0            ,""            							,"Source Resistance per unit width at high Vgs (RDSMOD=1)" ) 
+`MPRnb( LRSWMIN        ,0.0            ,""            							,"" ) 
+`MPRnb( WRSWMIN        ,0.0            ,""            							,"" ) 
+`MPRnb( PRSWMIN        ,0.0            ,""            							,"" ) 
+`MPRnb( RSW            ,10.0           ,""            							,"zero bias Source Resistance (RDSMOD=1)" ) 
+`MPRnb( LRSW           ,0.0            ,""            							,"" ) 
+`MPRnb( WRSW           ,0.0            ,""            							,"" ) 
+`MPRnb( PRSW           ,0.0            ,""            							,"" ) 
+`MPRnb( RSWL           ,0.0            ,""            							,"Geometrical scaling of RSW (RDSMOD=1)" ) 
+`MPRoz( RSWLEXP        ,1.0            ,""            							,"Geometrical scaling of RSW (RDSMOD=1)" ) 
 
-parameter real RDWMIN 	= RSWMIN;				// Drain Resistance per unit width at high Vgs (RDSMOD=1)
-parameter real LRDWMIN 	= LRSWMIN;
-parameter real WRDWMIN 	= WRSWMIN;
-parameter real PRDWMIN 	= PRSWMIN;
-parameter real RDW 	= RSW;					// zero bias Drain Resistance (RDSMOD=1)
-parameter real LRDW 	= LRSW;
-parameter real WRDW 	= WRSW;
-parameter real PRDW 	= PRSW;
-parameter real RDWL 	= RSWL;					// Geometrical scaling of RDW (RDSMOD=1)
-parameter real RDWLEXP 	= RSWLEXP	from (0:inf);		// Geometrical scaling of RDW (RDSMOD=1)
+`MPRnb( RDWMIN         ,RSWMIN         ,""            							,"Drain Resistance per unit width at high Vgs (RDSMOD=1)" ) 
+`MPRnb( LRDWMIN        ,LRSWMIN        ,""            							,"" ) 
+`MPRnb( WRDWMIN        ,WRSWMIN        ,""            							,"" ) 
+`MPRnb( PRDWMIN        ,PRSWMIN        ,""            							,"" ) 
+`MPRnb( RDW            ,RSW            ,""            							,"zero bias Drain Resistance (RDSMOD=1)" ) 
+`MPRnb( LRDW           ,LRSW           ,""            							,"" ) 
+`MPRnb( WRDW           ,WRSW           ,""            							,"" ) 
+`MPRnb( PRDW           ,PRSW           ,""            							,"" ) 
+`MPRnb( RDWL           ,RSWL           ,""            							,"Geometrical scaling of RDW (RDSMOD=1)" ) 
+`MPRoz( RDWLEXP        ,RSWLEXP        ,""            							,"Geometrical scaling of RDW (RDSMOD=1)" ) 
 
-parameter real RDSWMIN 	= 0.0;					// S/D Resistance per unit width at high Vgs (RDSMOD=0 and RDSMOD=2)
-parameter real LRDSWMIN = 0.0;
-parameter real WRDSWMIN = 0.0;
-parameter real PRDSWMIN = 0.0;
-parameter real RDSW 	= 20.0;					// zero bias Resistance (RDSMOD=0 and RDSMOD=2)
-parameter real RDSWL 	= 0.0;					// Geometrical scaling of RDSW (RDSMOD=0 and RDSMOD=2)
-parameter real RDSWLEXP = 1.0	from (0:inf); 			// Geometrical scaling of RDSW (RDSMOD=0 and RDSMOD=2)
-parameter real LRDSW 	= 0.0;
-parameter real WRDSW 	= 0.0;
-parameter real PRDSW 	= 0.0;
+`MPRnb( RDSWMIN        ,0.0            ,""            							,"S/D Resistance per unit width at high Vgs (RDSMOD=0 and RDSMOD=2)" ) 
+`MPRnb( LRDSWMIN       ,0.0            ,""            							,"" ) 
+`MPRnb( WRDSWMIN       ,0.0            ,""            							,"" ) 
+`MPRnb( PRDSWMIN       ,0.0            ,""            							,"" ) 
+`MPRnb( RDSW           ,20.0           ,""            							,"zero bias Resistance (RDSMOD=0 and RDSMOD=2)" ) 
+`MPRnb( RDSWL          ,0.0            ,""            							,"Geometrical scaling of RDSW (RDSMOD=0 and RDSMOD=2)" ) 
+`MPRoz( RDSWLEXP       ,1.0            ,""            							,"Geometrical scaling of RDSW (RDSMOD=0 and RDSMOD=2)" ) 
+`MPRnb( LRDSW          ,0.0            ,""            							,"" ) 
+`MPRnb( WRDSW          ,0.0            ,""            							,"" ) 
+`MPRnb( PRDSW          ,0.0            ,""            							,"" ) 
 
 // Velocity Saturation
 
-parameter real PSAT 	= 1.0;				// Gmsat variation with gate bias
-parameter real LPSAT 	= 0.0;
-parameter real WPSAT 	= 0.0;
-parameter real PPSAT 	= 0.0;
-parameter real PSATL 	= 0.0;
-parameter real PSATLEXP = 1.0	from (0:inf);
-parameter real PSATB	= 0.0;					// Body bias effect on Idsat
-parameter real LPSATB	= 0.0;
-parameter real WPSATB	= 0.0;
-parameter real PPSATB	= 0.0;
+`MPRnb( PSAT           ,1.0            ,""            							,"Gmsat variation with gate bias" ) 
+`MPRnb( LPSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( WPSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( PPSAT          ,0.0            ,""            							,"" ) 
+`MPRnb( PSATL          ,0.0            ,""            							,"" ) 
+`MPRoz( PSATLEXP       ,1.0            ,""            							,"" ) 
+`MPRnb( PSATB          ,0.0            ,""            							,"Body bias effect on Idsat" ) 
+`MPRnb( PSATR          ,PSAT           ,""            							,"Gmsat variation with gate bias" ) 
+`MPRnb( LPSATR         ,LPSAT          ,""            							,"" ) 
+`MPRnb( WPSATR         ,WPSAT          ,""            							,"" ) 
+`MPRnb( PPSATR         ,PPSAT          ,""            							,"" ) 
 
-parameter real PSATX	= 1.0 from (0:inf);
-parameter real PTWG 	= 0.0;					// Idsat variation with gate bias
-parameter real LPTWG 	= 0.0;
-parameter real WPTWG 	= 0.0;
-parameter real PPTWG 	= 0.0;
-parameter real PTWGL 	= 0.0;					// Length dependence coefficient of PTWG
-parameter real PTWGLEXP = 1.0	from (0:inf);			// Length dependence exponent coefficient of PTWG
+`MPRnb( LPSATB         ,0.0            ,""            							,"" ) 
+`MPRnb( WPSATB         ,0.0            ,""            							,"" ) 
+`MPRnb( PPSATB         ,0.0            ,""            							,"" ) 
 
+`MPRoz( PSATX          ,1.0            ,""            							,"" ) 
+`MPRnb( PTWG           ,0.0            ,""            							,"Idsat variation with gate bias" ) 
+`MPRnb( LPTWG          ,0.0            ,""            							,"" ) 
+`MPRnb( WPTWG          ,0.0            ,""            							,"" ) 
+`MPRnb( PPTWG          ,0.0            ,""            							,"" ) 
+`MPRnb( PTWGL          ,0.0            ,""            							,"Length dependence coefficient of PTWG" ) 
+`MPRoz( PTWGLEXP       ,1.0            ,""            							,"Length dependence exponent coefficient of PTWG" ) 
+`MPRnb( PTWGR          ,PTWG           ,""            							,"Idsat variation with gate bias" ) 
+`MPRnb( LPTWGR         ,LPTWG          ,""            							,"" ) 
+`MPRnb( WPTWGR         ,WPTWG          ,""            							,"" ) 
+`MPRnb( PPTWGR         ,PPTWG          ,""            							,"" ) 
+`MPRnb( PTWGLR         ,PTWGL          ,""            							,"Length dependence coefficient of PTWG" ) 
+`MPRoz( PTWGLEXPR      ,PTWGLEXP       ,""            							,"Length dependence exponent coefficient of PTWG" ) 
+
+// ******Velocity Non Saturation Effect
+`MPRnb( A1             ,0.0            ,""            							,"Non-saturation effect parameter for strong inversion region" ) 
+`MPRnb( LA1            ,0.0            ,""            							,"" ) 
+`MPRnb( WA1            ,0.0            ,""            							,"" ) 
+`MPRnb( PA1            ,0.0            ,""            							,"" ) 
+`MPRnb( A11            ,0.0            ,""            							,"Temperature dependence of A1" ) 
+`MPRnb( LA11           ,0.0            ,""            							,"" ) 
+`MPRnb( WA11           ,0.0            ,""            							,"" ) 
+`MPRnb( PA11           ,0.0            ,""            							,"" ) 
+
+`MPRnb( A2             ,0.0            ,""            							,"Non-saturation effect parameter for moderate inversion region" ) 
+`MPRnb( LA2            ,0.0            ,""           							,"" ) 
+`MPRnb( WA2            ,0.0            ,""            							,"" ) 
+`MPRnb( PA2            ,0.0            ,""            							,"" ) 
+`MPRnb( A21            ,0.0            ,""            							,"Temperature dependence of A2" ) 
+`MPRnb( LA21           ,0.0            ,""            							,"" ) 
+`MPRnb( WA21           ,0.0            ,""            							,"" ) 
+`MPRnb( PA21           ,0.0            ,""            							,"" ) 
+				
 // Output Conductance
-parameter real PDIBLC 	= 0.0;					// parameter for DIBL effect on Rout
-parameter real PDIBLCL  = 0.0;					// Length dependence coefficient of PDIBLC
-parameter real PDIBLCLEXP = 1.0	from (0:inf);			// Length dependence exponent coefficient of PDIBLC
-parameter real LPDIBLC  = 0.0;
-parameter real WPDIBLC  = 0.0;
-parameter real PPDIBLC  = 0.0;
+`MPRnb( PDIBLC         ,0.0            ,""            							,"parameter for DIBL effect on Rout" ) 
+`MPRnb( PDIBLCL        ,0.0            ,""            							,"Length dependence coefficient of PDIBLC" ) 
+`MPRoz( PDIBLCLEXP     ,1.0            ,""            							,"Length dependence exponent coefficient of PDIBLC" ) 
+`MPRnb( LPDIBLC        ,0.0            ,""            							,"" ) 
+`MPRnb( WPDIBLC        ,0.0            ,""            							,"" ) 
+`MPRnb( PPDIBLC        ,0.0            ,""            							,"" ) 
+`MPRnb( PDIBLCR        ,0.0            ,""            							,"parameter for DIBL effect on Rout" ) 
+`MPRnb( PDIBLCLR       ,PDIBLCL        ,""            							,"Length dependence coefficient of PDIBLC" ) 
+`MPRoz( PDIBLCLEXPR    ,PDIBLCLEXP     ,""            							,"Length dependence exponent coefficient of PDIBLC" ) 
+`MPRnb( LPDIBLCR       ,LPDIBLC        ,""            							,"" ) 
+`MPRnb( WPDIBLCR       ,WPDIBLC        ,""            							,"" ) 
+`MPRnb( PPDIBLCR       ,PPDIBLC        ,""            							,"" ) 
 
-parameter real PDIBLCB 	= 0.0;					// parameter for DIBL effect on Rout
-parameter real LPDIBLCB = 0.0;
-parameter real WPDIBLCB = 0.0;
-parameter real PPDIBLCB = 0.0;
+`MPRnb( PDIBLCB        ,0.0            ,""            							,"parameter for DIBL effect on Rout" ) 
+`MPRnb( LPDIBLCB       ,0.0            ,""            							,"" ) 
+`MPRnb( WPDIBLCB       ,0.0            ,""            							,"" ) 
+`MPRnb( PPDIBLCB       ,0.0            ,""            							,"" ) 
 
-parameter real PVAG 	= 1.0;					// Vg dependence of early voltage
-parameter real LPVAG 	= 0.0;
-parameter real WPVAG 	= 0.0;
-parameter real PPVAG 	= 0.0;
+`MPRnb( PVAG           ,1.0            ,""            							,"Vg dependence of early voltage" ) 
+`MPRnb( LPVAG          ,0.0            ,""            							,"" ) 
+`MPRnb( WPVAG          ,0.0            ,""            							,"" ) 
+`MPRnb( PPVAG          ,0.0            ,""            							,"" ) 
 
-parameter real FPROUT 	= 0.0;
-parameter real FPROUTL 	= 0.0; 					// Length dependence coefficient of FPROUT
-parameter real FPROUTLEXP = 1.0	from (0:inf);			// Length dependence exponent coefficient of FPROUT
-parameter real LFPROUT 	= 0.0;
-parameter real WFPROUT 	= 0.0;
-parameter real PFPROUT 	= 0.0;
+`MPRnb( FPROUT         ,0.0            ,""            							,"" ) 
+`MPRnb( FPROUTL        ,0.0            ,""            							,"Length dependence coefficient of FPROUT" ) 
+`MPRoz( FPROUTLEXP     ,1.0            ,""            							,"Length dependence exponent coefficient of FPROUT" ) 
+`MPRnb( LFPROUT        ,0.0            ,""            							,"" ) 
+`MPRnb( WFPROUT        ,0.0            ,""            							,"" ) 
+`MPRnb( PFPROUT        ,0.0            ,""            							,"" ) 
 
 // Impact Ionization Current
-parameter real ALPHA0	= 0.0;					// first parameter of Iii, m/V
-parameter real ALPHA0L	= 0.0;					// Length dependence coefficient of ALPHA0
-parameter real ALPHA0LEXP = 1.0	from (0:inf);			// Length dependence exponent coefficient of ALPHA0
-parameter real LALPHA0	= 0.0;
-parameter real WALPHA0	= 0.0;
-parameter real PALPHA0	= 0.0;
+`MPRnb( ALPHA0         ,0.0            ,""            							,"first parameter of Iii, m/V" ) 
+`MPRnb( ALPHA0L        ,0.0            ,""           	 						,"Length dependence coefficient of ALPHA0" ) 
+`MPRoz( ALPHA0LEXP     ,1.0            ,""            							,"Length dependence exponent coefficient of ALPHA0" ) 
+`MPRnb( LALPHA0        ,0.0            ,""            							,"" ) 
+`MPRnb( WALPHA0        ,0.0            ,""            							,"" ) 
+`MPRnb( PALPHA0        ,0.0            ,""            							,"" ) 
 
-parameter real BETA0	= 0.0;					// Vds dependent parameter of Iii, 1/V
-parameter real LBETA0	= 0.0;
-parameter real WBETA0	= 0.0;
-parameter real PBETA0	= 0.0;
+`MPRnb( BETA0          ,0.0            ,""            							,"Vds dependent parameter of Iii, 1/V" ) 
+`MPRnb( LBETA0         ,0.0            ,""            							,"" ) 
+`MPRnb( WBETA0         ,0.0            ,""            							,"" ) 
+`MPRnb( PBETA0         ,0.0            ,""            							,"" ) 
 
 //Gate Dielectric Tunneling Current Model Parameters
-parameter real AIGBACC = 1.36e-2;	 			// Parameter for Igb
-parameter real BIGBACC = 1.71e-3;	 			// Parameter for Igb
-parameter real CIGBACC = 0.075;	 				// Parameter for Igb
-parameter real NIGBACC = 1.0;	 				// Parameter for Igbacc slope
-parameter real AIGBINV = 1.11e-2;	 			// Parameter for Igb
-parameter real BIGBINV = 9.49e-4;	 			// Parameter for Igb
-parameter real CIGBINV = 0.006;	 				// Parameter for Igb
-parameter real EIGBINV = 1.1;	 				// Parm for the Si bandgap for Igbinv [V]
-parameter real NIGBINV = 3.0;	 				// Parameter for Igbinv slope
-parameter real AIGC = (TYPE == `ntype) ? 1.36e-2 : 9.8e-3; 		// Parameter for Igc
-parameter real BIGC = (TYPE == `ntype) ? 1.71e-3 : 7.59e-4; 		// Parameter for Igc
-parameter real CIGC = (TYPE == `ntype) ? 0.075 : 0.03; 			// Parameter for Igc
-parameter real AIGS = (TYPE == `ntype) ? 1.36e-2 : 9.8e-3; 		// Parameter for Igs d
-parameter real BIGS = (TYPE == `ntype) ? 1.71e-3 : 7.59e-4; 		// Parameter for Igs d
-parameter real CIGS = (TYPE == `ntype) ? 0.075 : 0.03; 			// Parameter for Igs d
-parameter real AIGD = (TYPE == `ntype) ? 1.36e-2 : 9.8e-3; 		// Parameter for Igs d
-parameter real BIGD = (TYPE == `ntype) ? 1.71e-3 : 7.59e-4; 		// Parameter for Igs d
-parameter real CIGD = (TYPE == `ntype) ? 0.075 : 0.03; 			// Parameter for Igs d
-parameter real DLCIG  = LINT;					// Delta L for Ig model [m]
-parameter real DLCIGD = DLCIG;					// Delta L for Ig model [m]
-parameter real POXEDGE = 1.0;					// Factor for the gate edge Tox
-parameter real NTOX = 1.0;						// Exponent for Tox ratio
-parameter real TOXREF = 3.0e-9 from (0:inf);			// Target tox value [m]
-parameter real PIGCD = 1.0 from [-50:50];			// Igc, S/D partition parameter
+`MPRnb( AIGBACC        ,1.36e-2        ,""            							,"Parameter for Igb" ) 
+`MPRnb( BIGBACC        ,1.71e-3        ,""            							,"Parameter for Igb" ) 
+`MPRnb( CIGBACC        ,0.075          ,""            							,"Parameter for Igb" ) 
+`MPRnb( NIGBACC        ,1.0            ,""            							,"Parameter for Igbacc slope" ) 
+`MPRnb( AIGBINV        ,1.11e-2        ,""            							,"Parameter for Igb" ) 
+`MPRnb( BIGBINV        ,9.49e-4        ,""            							,"Parameter for Igb" ) 
+`MPRnb( CIGBINV        ,0.006          ,""            							,"Parameter for Igb" ) 
+`MPRnb( EIGBINV        ,1.1            ,""            							,"Parm for the Si bandgap for Igbinv" ) 
+`MPRnb( NIGBINV        ,3.0            ,""            							,"Parameter for Igbinv slope" ) 
+`MPRnb( AIGC           ,((TYPE == `ntype) ? 1.36e-2 : 9.8e-3)    	,""         ,"Parameter for Igc" ) 
+`MPRnb( BIGC           ,((TYPE == `ntype) ? 1.71e-3 : 7.59e-4)		,""         ,"Parameter for Igc" ) 
+`MPRnb( CIGC           ,((TYPE == `ntype) ? 0.075 : 0.03)			,""         ,"Parameter for Igc" ) 
+`MPRnb( AIGS           ,((TYPE == `ntype) ? 1.36e-2 : 9.8e-3)		,""         ,"Parameter for Igs d" ) 
+`MPRnb( BIGS           ,((TYPE == `ntype) ? 1.71e-3 : 7.59e-4)		,""         ,"Parameter for Igs d" ) 
+`MPRnb( CIGS           ,((TYPE == `ntype) ? 0.075 : 0.03)			,""         ,"Parameter for Igs d" ) 
+`MPRnb( AIGD           ,((TYPE == `ntype) ? 1.36e-2 : 9.8e-3)		,""         ,"Parameter for Igs d" ) 
+`MPRnb( BIGD           ,((TYPE == `ntype) ? 1.71e-3 : 7.59e-4)		,""         ,"Parameter for Igs d" ) 
+`MPRnb( CIGD           ,((TYPE == `ntype) ? 0.075 : 0.03)			,""         ,"Parameter for Igs d" ) 
+`MPRnb( DLCIG          ,LINT           ,"m"           							,"Delta L for Ig model [m]" ) 
+`MPRnb( DLCIGD         ,DLCIG          ,"m"           							,"Delta L for Ig model [m]" ) 
+`MPRnb( POXEDGE        ,1.0            ,""            							,"Factor for the gate edge Tox" ) 
+`MPRnb( NTOX           ,1.0            ,""            							,"Exponent for Tox ratio" ) 
+`MPRoz( TOXREF         ,3.0e-9         ,"m"           							,"Target tox value" ) 
+`MPRcc( PIGCD          ,1.0            ,""            ,-50         ,50          ,"Igc, S/D partition parameter" ) 
 
-parameter real AIGCL = 0.0; 					// Length dependence coefficient of AIGC
-parameter real AIGCW = 0.0; 					// Width dependence coefficient of AIGC
-parameter real AIGSL = 0.0; 					// Length dependence coefficient of AIGS
-parameter real AIGSW = 0.0; 					// Width dependence coefficient of AIGS
-parameter real AIGDL = 0.0; 					// Length dependence coefficient of AIGD
-parameter real AIGDW = 0.0; 					// Width dependence coefficient of AIGD
-parameter real PIGCDL = 0.0; 					// Length dependence coefficient of PIGCD
+`MPRnb( AIGCL          ,0.0            ,""            							,"Length dependence coefficient of AIGC" ) 
+`MPRnb( AIGCW          ,0.0            ,""            							,"Width dependence coefficient of AIGC" ) 
+`MPRnb( AIGSL          ,0.0            ,""            							,"Length dependence coefficient of AIGS" ) 
+`MPRnb( AIGSW          ,0.0            ,""            							,"Width dependence coefficient of AIGS" ) 
+`MPRnb( AIGDL          ,0.0            ,""            							,"Length dependence coefficient of AIGD" ) 
+`MPRnb( AIGDW          ,0.0            ,""            							,"Width dependence coefficient of AIGD" ) 
+`MPRnb( PIGCDL         ,0.0            ,""            							,"Length dependence coefficient of PIGCD" ) 
 
-parameter real LAIGBINV = 0.0;
-parameter real WAIGBINV = 0.0;
-parameter real PAIGBINV = 0.0;
+`MPRnb( LAIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( WAIGBINV       ,0.0            ,""           					 		,"" ) 
+`MPRnb( PAIGBINV       ,0.0            ,""            							,"" ) 
 
-parameter real LBIGBINV = 0.0;
-parameter real WBIGBINV = 0.0;
-parameter real PBIGBINV = 0.0;
+`MPRnb( LBIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( WBIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( PBIGBINV       ,0.0            ,""            							,"" ) 
 
-parameter real LCIGBINV = 0.0;
-parameter real WCIGBINV = 0.0;
-parameter real PCIGBINV = 0.0;
+`MPRnb( LCIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( WCIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( PCIGBINV       ,0.0            ,""            							,"" ) 
 
-parameter real LEIGBINV = 0.0;
-parameter real WEIGBINV = 0.0;
-parameter real PEIGBINV = 0.0;
+`MPRnb( LEIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( WEIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( PEIGBINV       ,0.0            ,""            							,"" ) 
 
-parameter real LNIGBINV = 0.0;
-parameter real WNIGBINV = 0.0;
-parameter real PNIGBINV = 0.0;
+`MPRnb( LNIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( WNIGBINV       ,0.0            ,""            							,"" ) 
+`MPRnb( PNIGBINV       ,0.0            ,""            							,"" ) 
 
-parameter real LAIGBACC = 0.0;
-parameter real WAIGBACC = 0.0;
-parameter real PAIGBACC = 0.0;
+`MPRnb( LAIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( WAIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( PAIGBACC       ,0.0            ,""            							,"" ) 
 
-parameter real LBIGBACC = 0.0;
-parameter real WBIGBACC = 0.0;
-parameter real PBIGBACC = 0.0;
+`MPRnb( LBIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( WBIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( PBIGBACC       ,0.0            ,""            							,"" ) 
 
-parameter real LCIGBACC = 0.0;
-parameter real WCIGBACC = 0.0;
-parameter real PCIGBACC = 0.0;
+`MPRnb( LCIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( WCIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( PCIGBACC       ,0.0            ,""            							,"" ) 
 
-parameter real LNIGBACC = 0.0;
-parameter real WNIGBACC = 0.0;
-parameter real PNIGBACC = 0.0;
+`MPRnb( LNIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( WNIGBACC       ,0.0            ,""            							,"" ) 
+`MPRnb( PNIGBACC       ,0.0            ,""            							,"" ) 
 
-parameter real LAIGC = 0.0;
-parameter real WAIGC = 0.0;
-parameter real PAIGC = 0.0;
+`MPRnb( LAIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( WAIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( PAIGC          ,0.0            ,""            							,"" ) 
 
-parameter real LBIGC = 0.0;
-parameter real WBIGC = 0.0;
-parameter real PBIGC = 0.0;
+`MPRnb( LBIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( WBIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( PBIGC          ,0.0            ,""            							,"" ) 
 
-parameter real LCIGC = 0.0;
-parameter real WCIGC = 0.0;
-parameter real PCIGC = 0.0;
+`MPRnb( LCIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( WCIGC          ,0.0            ,""            							,"" ) 
+`MPRnb( PCIGC          ,0.0            ,""            							,"" ) 
 
-parameter real LAIGS = 0.0;
-parameter real WAIGS = 0.0;
-parameter real PAIGS = 0.0;
+`MPRnb( LAIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( WAIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( PAIGS          ,0.0            ,""            							,"" ) 
 
-parameter real LBIGS = 0.0;
-parameter real WBIGS = 0.0;
-parameter real PBIGS = 0.0;
+`MPRnb( LBIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( WBIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( PBIGS          ,0.0            ,""            							,"" ) 
 
-parameter real LCIGS = 0.0;
-parameter real WCIGS = 0.0;
-parameter real PCIGS = 0.0;
+`MPRnb( LCIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( WCIGS          ,0.0            ,""            							,"" ) 
+`MPRnb( PCIGS          ,0.0            ,""            							,"" ) 
 
-parameter real LAIGD = 0.0;
-parameter real WAIGD = 0.0;
-parameter real PAIGD = 0.0;
+`MPRnb( LAIGD          ,0.0            ,""            							,"" ) 
+`MPRnb( WAIGD          ,0.0            ,""           					 		,"" ) 
+`MPRnb( PAIGD          ,0.0            ,""            							,"" ) 
 
-parameter real LBIGD = 0.0;
-parameter real WBIGD = 0.0;
-parameter real PBIGD = 0.0;
+`MPRnb( LBIGD          ,0.0            ,""            							,"" ) 
+`MPRnb( WBIGD          ,0.0            ,""            							,"" ) 
+`MPRnb( PBIGD          ,0.0            ,""            							,"" ) 
 
-parameter real LCIGD = 0.0;
-parameter real WCIGD = 0.0;
-parameter real PCIGD = 0.0;
+`MPRnb( LCIGD          ,0.0            ,""            							,"" ) 
+`MPRnb( WCIGD          ,0.0            ,""            							,"" ) 
+`MPRnb( PCIGD          ,0.0            ,""            							,"" ) 
 
-parameter real LPOXEDGE = 0.0;
-parameter real WPOXEDGE = 0.0;
-parameter real PPOXEDGE = 0.0;
+`MPRnb( LPOXEDGE       ,0.0            ,""            							,"" ) 
+`MPRnb( WPOXEDGE       ,0.0            ,""            							,"" ) 
+`MPRnb( PPOXEDGE       ,0.0            ,""            							,"" ) 
 
-parameter real LDLCIG = 0.0;
-parameter real WDLCIG = 0.0;
-parameter real PDLCIG = 0.0;
+`MPRnb( LDLCIG         ,0.0            ,""            							,"" ) 
+`MPRnb( WDLCIG         ,0.0            ,""            							,"" ) 
+`MPRnb( PDLCIG         ,0.0            ,""            							,"" ) 
 
-parameter real LDLCIGD = 0.0;
-parameter real WDLCIGD = 0.0;
-parameter real PDLCIGD = 0.0;
+`MPRnb( LDLCIGD        ,0.0            ,""            							,"" ) 
+`MPRnb( WDLCIGD        ,0.0            ,""            							,"" ) 
+`MPRnb( PDLCIGD        ,0.0            ,""            							,"" ) 
 
-parameter real LNTOX = 0.0;
-parameter real WNTOX = 0.0;
-parameter real PNTOX = 0.0;
+`MPRnb( LNTOX          ,0.0            ,""            							,"" ) 
+`MPRnb( WNTOX          ,0.0            ,""            							,"" ) 
+`MPRnb( PNTOX          ,0.0            ,""            							,"" ) 
 
 //GIDL/GISL Current
-parameter real AGIDL	= 0.0;					// pre-exponential coeff. for GIDL in mho
-parameter real AGIDLL	= 0.0;					// Length dependence coefficient of AGIDL
-parameter real AGIDLW	= 0.0;					// Width dependence coefficient of AGIDL
-parameter real LAGIDL	= 0.0;
-parameter real WAGIDL	= 0.0;
-parameter real PAGIDL	= 0.0;
-parameter real BGIDL	= 2.3e9;				// exponential coeff. for GIDL in V/m
-parameter real LBGIDL	= 0.0;
-parameter real WBGIDL	= 0.0;
-parameter real PBGIDL	= 0.0;
+`MPRnb( AGIDL          ,0.0            ,"V/m"         							,"pre-exponential coeff. for GIDL in mho" ) 
+`MPRnb( AGIDLL         ,0.0            ,""            							,"Length dependence coefficient of AGIDL" ) 
+`MPRnb( AGIDLW         ,0.0            ,""            							,"Width dependence coefficient of AGIDL" ) 
+`MPRnb( LAGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( WAGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( PAGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( BGIDL          ,2.3e9          ,"V/m"         							,"exponential coeff. for GIDL in" ) 
+`MPRnb( LBGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( WBGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( PBGIDL         ,0.0            ,""            							,"" ) 
 
-parameter real CGIDL	= 0.5;       				// exponential coeff. for GIDL in V/m
-parameter real LCGIDL	= 0.0;
-parameter real WCGIDL	= 0.0;
-parameter real PCGIDL	= 0.0;
-parameter real EGIDL	= 0.8;					// band bending parameter for GIDL in V
-parameter real LEGIDL	= 0.0;
-parameter real WEGIDL	= 0.0;
-parameter real PEGIDL	= 0.0;
-parameter real AGISL	= AGIDL;				// pre-exponential coeff. for GISL in mho
-parameter real AGISLL	= AGIDLL;				// Length dependence coefficient of AGISL
-parameter real AGISLW	= AGIDLW;				// Width dependence coefficient of AGISL
-parameter real LAGISL	= LAGIDL;
-parameter real WAGISL	= WAGIDL;
-parameter real PAGISL	= PAGIDL;
-parameter real BGISL	= BGIDL;				// exponential coeff. for GISL in V/m
-parameter real LBGISL	= LBGIDL;
-parameter real WBGISL	= WBGIDL;
-parameter real PBGISL	= PBGIDL;
-parameter real CGISL	= CGIDL;                		// exponential coeff. for GISL in V/m
-parameter real LCGISL	= LCGIDL;
-parameter real WCGISL	= WCGIDL;
-parameter real PCGISL	= PCGIDL;
-parameter real EGISL	= EGIDL;				// band bending parameter for GISL in V
-parameter real LEGISL	= LEGIDL;
-parameter real WEGISL	= WEGIDL;
-parameter real PEGISL	= PEGIDL;
+`MPRnb( CGIDL          ,0.5            ,"V/m"         							,"exponential coeff. for GIDL in V/m" ) 
+`MPRnb( LCGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( WCGIDL         ,0.0            ,""           				 			,"" ) 
+`MPRnb( PCGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( EGIDL          ,0.8            ,""            							,"band bending parameter for GIDL" ) 
+`MPRnb( LEGIDL         ,0.0            ,""           	 						,"" ) 
+`MPRnb( WEGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( PEGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( AGISL          ,AGIDL          ,"V/m"         							,"pre-exponential coeff. for GISL" ) 
+`MPRnb( AGISLL         ,AGIDLL         ,""            							,"Length dependence coefficient of AGISL" ) 
+`MPRnb( AGISLW         ,AGIDLW         ,""            							,"Width dependence coefficient of AGISL" ) 
+`MPRnb( LAGISL         ,LAGIDL         ,""            							,"" ) 
+`MPRnb( WAGISL         ,WAGIDL         ,""            							,"" ) 
+`MPRnb( PAGISL         ,PAGIDL         ,""            							,"" ) 
+`MPRnb( BGISL          ,BGIDL          ,"V/m"         							,"exponential coeff. for GISL" ) 
+`MPRnb( LBGISL         ,LBGIDL         ,""            							,"" ) 
+`MPRnb( WBGISL         ,WBGIDL         ,""            							,"" ) 
+`MPRnb( PBGISL         ,PBGIDL         ,""            							,"" ) 
+`MPRnb( CGISL          ,CGIDL          ,"V/m"         							,"exponential coeff. for GISL" ) 
+`MPRnb( LCGISL         ,LCGIDL         ,""            							,"" ) 
+`MPRnb( WCGISL         ,WCGIDL         ,""            							,"" ) 
+`MPRnb( PCGISL         ,PCGIDL         ,""            							,"" ) 
+`MPRnb( EGISL          ,EGIDL          ,""            							,"band bending parameter for GISL" ) 
+`MPRnb( LEGISL         ,LEGIDL         ,""            							,"" ) 
+`MPRnb( WEGISL         ,WEGIDL         ,""            							,"" ) 
+`MPRnb( PEGISL         ,PEGIDL         ,""            							,"" ) 
 
 // Overlap Cap and Fringing Cap
-parameter real CF 		= 0.0;					// Outer Fringe Cap (F)
-parameter real LCF 		= 0.0;
-parameter real WCF 		= 0.0;
-parameter real PCF 		= 0.0;
-parameter real CFRCOEFF = 1.0 from [1.0:inf);	// Coefficient for Outer Fringe Cap (F)
-parameter real CGSO		= 0.0;					// Gate - Source overlap capacitance (F)
-parameter real CGDO		= 0.0;					// Gate - Drain overlap capacitance (F)
-parameter real CGBO		= 0.0;					// Gate - Body overlap capacitance (F)
-parameter real CGSL		= 0.0;
-parameter real LCGSL	= 0.0;
-parameter real WCGSL	= 0.0;
-parameter real PCGSL	= 0.0;
-parameter real CGDL		= 0.0;
-parameter real LCGDL	= 0.0;
-parameter real WCGDL	= 0.0;
-parameter real PCGDL	= 0.0;
-parameter real CKAPPAS	= 0.6;
-parameter real LCKAPPAS	= 0.0;
-parameter real WCKAPPAS	= 0.0;
-parameter real PCKAPPAS	= 0.0;
-parameter real CKAPPAD	= 0.6;
-parameter real LCKAPPAD	= 0.0;
-parameter real WCKAPPAD	= 0.0;
-parameter real PCKAPPAD	= 0.0;
+`MPRnb( CF             ,0.0            ,"F"           							,"Outer Fringe Cap" ) 
+`MPRnb( LCF            ,0.0            ,"F"           							,"" ) 
+`MPRnb( WCF            ,0.0            ,"F"           							,"" ) 
+`MPRnb( PCF            ,0.0            ,"F"           							,"" ) 
+`MPRco( CFRCOEFF       ,1.0            ,""            ,1.0         ,inf         ,"Coefficient for Outer Fringe Cap" ) 
+`MPRnb( CGSO           ,0.0            ,""            							,"Gate - Source overlap capacitance" ) 
+`MPRnb( CGDO           ,0.0            ,""            							,"Gate - Drain overlap capacitance" ) 
+`MPRnb( CGBO           ,0.0            ,""            							,"Gate - Body overlap capacitance" ) 
+`MPRnb( CGSL           ,0.0            ,""            							,"" ) 
+`MPRnb( LCGSL          ,0.0            ,""            							,"" ) 
+`MPRnb( WCGSL          ,0.0            ,""            							,"" ) 
+`MPRnb( PCGSL          ,0.0            ,""           				 			,"" ) 
+`MPRnb( CGDL           ,0.0            ,""            							,"" ) 
+`MPRnb( LCGDL          ,0.0            ,""            							,"" ) 
+`MPRnb( WCGDL          ,0.0            ,""            							,"" ) 
+`MPRnb( PCGDL          ,0.0            ,""            							,"" ) 
+`MPRnb( CKAPPAS        ,0.6            ,""            							,"" ) 
+`MPRnb( LCKAPPAS       ,0.0            ,""            							,"" ) 
+`MPRnb( WCKAPPAS       ,0.0            ,""            							,"" ) 
+`MPRnb( PCKAPPAS       ,0.0            ,""            							,"" ) 
+`MPRnb( CKAPPAD        ,0.6            ,""            							,"" ) 
+`MPRnb( LCKAPPAD       ,0.0            ,""            							,"" ) 
+`MPRnb( WCKAPPAD       ,0.0            ,""            							,"" ) 
+`MPRnb( PCKAPPAD       ,0.0            ,""            							,"" ) 
 
 
 // Layout-Dependent Parasitics Model Parameters ....Resistance only
-parameter real DMCG 	= 0.0;					// Distance of Mid-Contact to Gate edge [m]
-parameter real DMCI 	= DMCG;					// Distance of Mid-Contact to Isolation [m]
-parameter real DMDG 	= 0.0;					// Distance of Mid-Diffusion to Gate edge [m]
-parameter real DMCGT 	= 0.0;					// Dist of Mid-Contact to Gate edge in Test [m]
+`MPRnb( DMCG           ,0.0            ,"m"           							,"Distance of Mid-Contact to Gate edge" ) 
+`MPRnb( DMCI           ,DMCG           ,"m"           							,"Distance of Mid-Contact to Isolation" ) 
+`MPRnb( DMDG           ,0.0            ,"m"           							,"Distance of Mid-Diffusion to Gate edge" ) 
+`MPRnb( DMCGT          ,0.0            ,"m"           							,"Dist of Mid-Contact to Gate edge in Test" ) 
 
 `ifdef __RGATEMOD__
-	parameter real XGW		= 0.0;					// Dist from gate contact center to dev edge [m]
-	parameter real XGL		= 0.0 from (-inf:L*LMLT+XL);	// Variation in Ldrawn [m]
-	parameter integer NGCON = 1 from [1:2];			// Number of gate contacts
-	parameter real RSHG		= 0.1 from [0:inf);		// Gate sheet resistance [Ohm]
+`MPRoo( XGL            ,0.0            ,"m"           ,-inf        ,L*LMLT+XL   ,"Variation in Ldrawn" ) 
+`MPRcz( RSHG           ,0.1            ,"ohm"         							,"Gate sheet resistance" ) 
 `endif
 
 // Junction current and capacitance
 // Junction Capacitance
-parameter real CJS 		= 5.0e-4;				// Unit area source-side junction capacitance at zero bias
-parameter real CJD 		= CJS;					// Unit area drain-side junction capacitance at zero bias
-parameter real CJSWS 	= 5.0e-10;				// Unit length source-side sidewall junction capacitance at zero bias
-parameter real CJSWD 	= CJSWS;				// Unit length drain-side sidewall junction capacitance at zero bias
-parameter real CJSWGS 	= 0.0;					// Unit length source-side gate sidewall junction capacitance at zero bias
-parameter real CJSWGD 	= CJSWGS;				// Unit length drain-side gate sidewall junction capacitance at zero bias
-parameter real PBS 		= 1.0;					// Source-side bulk junction built-in potential
-parameter real PBD 		= PBS;					// Drain-side bulk junction built-in potential
-parameter real PBSWS 	= 1.0;					// Built-in potential for Source-side sidewall junction capacitance
-parameter real PBSWD 	= PBSWS;				// Built-in potential for Drain-side sidewall junction capacitance
-parameter real PBSWGS 	= PBSWS;				// Built-in potential for Source-side gate sidewall junction capacitance
-parameter real PBSWGD 	= PBSWGS;				// Built-in potential for Drain-side gate sidewall junction capacitance
-parameter real MJS 		= 0.5;					// Source bottom junction capacitance grading coefficient
-parameter real MJD 		= MJS;					// Drain bottom junction capacitance grading coefficient
-parameter real MJSWS 	= 0.33;					// Source sidewall junction capacitance grading coefficient
-parameter real MJSWD 	= MJSWS;				// Drain sidewall junction capacitance grading coefficient
-parameter real MJSWGS 	= MJSWS;				// Source-side gate sidewall junction capacitance grading coefficient
-parameter real MJSWGD 	= MJSWGS;				// Drain-side gate sidewall junction capacitance grading coefficient
+`MPRnb( CJS            ,5.0e-4         ,""            							,"Unit area source-side junction capacitance at zero bias" ) 
+`MPRnb( CJD            ,CJS            ,""            							,"Unit area drain-side junction capacitance at zero bias" ) 
+`MPRnb( CJSWS          ,5.0e-10        ,""            							,"Unit length source-side sidewall junction capacitance at zero bias" ) 
+`MPRnb( CJSWD          ,CJSWS          ,""            							,"Unit length drain-side sidewall junction capacitance at zero bias" ) 
+`MPRnb( CJSWGS         ,0.0            ,""            							,"Unit length source-side gate sidewall junction capacitance at zero bias" ) 
+`MPRnb( CJSWGD         ,CJSWGS         ,""            							,"Unit length drain-side gate sidewall junction capacitance at zero bias" ) 
+`MPRnb( PBS            ,1.0            ,""            							,"Source-side bulk junction built-in potential" ) 
+`MPRnb( PBD            ,PBS            ,""            							,"Drain-side bulk junction built-in potential" ) 
+`MPRnb( PBSWS          ,1.0            ,""            							,"Built-in potential for Source-side sidewall junction capacitance" ) 
+`MPRnb( PBSWD          ,PBSWS          ,""            							,"Built-in potential for Drain-side sidewall junction capacitance" ) 
+`MPRnb( PBSWGS         ,PBSWS          ,""            							,"Built-in potential for Source-side gate sidewall junction capacitance" ) 
+`MPRnb( PBSWGD         ,PBSWGS         ,""            							,"Built-in potential for Drain-side gate sidewall junction capacitance" ) 
+`MPRnb( MJS            ,0.5            ,""            							,"Source bottom junction capacitance grading coefficient" ) 
+`MPRnb( MJD            ,MJS            ,""            							,"Drain bottom junction capacitance grading coefficient" ) 
+`MPRnb( MJSWS          ,0.33           ,""            							,"Source sidewall junction capacitance grading coefficient" ) 
+`MPRnb( MJSWD          ,MJSWS          ,""            							,"Drain sidewall junction capacitance grading coefficient" ) 
+`MPRnb( MJSWGS         ,MJSWS          ,""            							,"Source-side gate sidewall junction capacitance grading coefficient" ) 
+`MPRnb( MJSWGD         ,MJSWGS         ,""            							,"Drain-side gate sidewall junction capacitance grading coefficient" ) 
 
 // Junction Current
-parameter real JSS 		= 1.0e-4;				// Bottom source junction reverse saturation current density
-parameter real JSD 		= JSS;					// Bottom drain junction reverse saturation current density
-parameter real JSWS 	= 0.0;					// Unit length reverse saturation current for sidewall source junction
-parameter real JSWD 	= JSWS;					// Unit length reverse saturation current for sidewall drain junction
-parameter real JSWGS 	= 0.0;					// Unit length reverse saturation current for gate-edge sidewall source junction
-parameter real JSWGD 	= JSWGS;				// Unit length reverse saturation current for gate-edge sidewall drain junction
-parameter real NJS 		= 1.0;					// Source junction emission coefficient
-parameter real NJD 		= NJS;					// Drain junction emission coefficient
-parameter real IJTHSFWD = 0.1;					// Forward source diode breakdown limiting current
-parameter real IJTHDFWD = IJTHSFWD;				// Forward drain diode breakdown limiting current
-parameter real IJTHSREV = 0.1;					// Reverse source diode breakdown limiting current
-parameter real IJTHDREV = IJTHSREV;				// Reverse drain diode breakdown limiting current
-parameter real BVS 		= 10.0;					// Source diode breakdown voltage
-parameter real BVD 		= BVS;					// Drain diode breakdown voltage
-parameter real XJBVS 	= 1.0;					// Fitting parameter for source diode breakdown current
-parameter real XJBVD 	= XJBVS;				// Fitting parameter for drain diode breakdown current
+`MPRnb( JSS            ,1.0e-4         ,""            							,"Bottom source junction reverse saturation current density" ) 
+`MPRnb( JSD            ,JSS            ,""            							,"Bottom drain junction reverse saturation current density" ) 
+`MPRnb( JSWS           ,0.0            ,""            							,"Unit length reverse saturation current for sidewall source junction" ) 
+`MPRnb( JSWD           ,JSWS           ,""            							,"Unit length reverse saturation current for sidewall drain junction" ) 
+`MPRnb( JSWGS          ,0.0            ,""            							,"Unit length reverse saturation current for gate-edge sidewall source junction" ) 
+`MPRnb( JSWGD          ,JSWGS          ,""            							,"Unit length reverse saturation current for gate-edge sidewall drain junction" ) 
+`MPRnb( NJS            ,1.0            ,""            							,"Source junction emission coefficient" ) 
+`MPRnb( NJD            ,NJS            ,""            							,"Drain junction emission coefficient" ) 
+`MPRnb( IJTHSFWD       ,0.1            ,""            							,"Forward source diode breakdown limiting current" ) 
+`MPRnb( IJTHDFWD       ,IJTHSFWD       ,""            							,"Forward drain diode breakdown limiting current" ) 
+`MPRnb( IJTHSREV       ,0.1            ,""           					 		,"Reverse source diode breakdown limiting current" ) 
+`MPRnb( IJTHDREV       ,IJTHSREV       ,""            							,"Reverse drain diode breakdown limiting current" ) 
+`MPRnb( BVS            ,10.0           ,""            							,"Source diode breakdown voltage" ) 
+`MPRnb( BVD            ,BVS            ,""            							,"Drain diode breakdown voltage" ) 
+`MPRnb( XJBVS          ,1.0            ,""            							,"Fitting parameter for source diode breakdown current" ) 
+`MPRnb( XJBVD          ,XJBVS          ,""            							,"Fitting parameter for drain diode breakdown current" ) 
 
 // Tunneling Component of Junction Current
-parameter real JTSS 	= 0.0;					// Bottom source junction trap-assisted saturation current density
-parameter real JTSD 	= JTSS;					// Bottom drain junction trap-assisted saturation current density
-parameter real JTSSWS 	= 0.0;					// Unit length trap-assisted saturation current for sidewall source junction
-parameter real JTSSWD 	= JTSSWS;				// Unit length trap-assisted saturation current for sidewall drain junction
-parameter real JTSSWGS 	= 0.0;					// Unit length trap-assisted saturation current for gate-edge sidewall source junction
-parameter real JTSSWGD 	= JTSSWGS;				// Unit length trap-assisted saturation current for gate-edge sidewall drain junction
-parameter real JTWEFF 	= 0.0;					// Trap assisted tunneling current width dependence
-parameter real NJTS 	= 20.0;					// Non-ideality factor for JTSS
-parameter real NJTSD 	= NJTS;					// Non-ideality factor for JTSD
-parameter real NJTSSW 	= 20.0;					// Non-ideality factor for JTSSWS
-parameter real NJTSSWD 	= NJTSSW;				// Non-ideality factor for JTSSWD
-parameter real NJTSSWG 	= 20.0;					// Non-ideality factor for JTSSWGS
-parameter real NJTSSWGD = NJTSSWG;				// Non-ideality factor for JTSSWGD
-parameter real VTSS 	= 10.0;					// Bottom source junction trap-assisted current voltage dependent parameter
-parameter real VTSD 	= VTSS;					// Bottom drain junction trap-assisted current voltage dependent parameter
-parameter real VTSSWS 	= 10.0;					// Unit length trap-assisted current voltage dependent parameter
-												// for sidewall source junction
-parameter real VTSSWD 	= VTSSWS;				// Unit length trap-assisted current voltage dependent parameter
-												// for sidewall drain junction
-parameter real VTSSWGS 	= 10.0;					// Unit length trap-assisted current voltage dependent parameter for
-												// gate-edge sidewall source junction
-parameter real VTSSWGD 	= VTSSWGS;				// Unit length trap-assisted current voltage dependent parameter for
-												// gate-edge sidewall drain junction
+`MPRnb( JTSS           ,0.0            ,""            							,"Bottom source junction trap-assisted saturation current density" ) 
+`MPRnb( JTSD           ,JTSS           ,""            							,"Bottom drain junction trap-assisted saturation current density" ) 
+`MPRnb( JTSSWS         ,0.0            ,""            							,"Unit length trap-assisted saturation current for sidewall source junction" ) 
+`MPRnb( JTSSWD         ,JTSSWS         ,""            							,"Unit length trap-assisted saturation current for sidewall drain junction" ) 
+`MPRnb( JTSSWGS        ,0.0            ,""            							,"Unit length trap-assisted saturation current for gate-edge sidewall source junction" ) 
+`MPRnb( JTSSWGD        ,JTSSWGS        ,""            							,"Unit length trap-assisted saturation current for gate-edge sidewall drain junction" ) 
+`MPRnb( JTWEFF         ,0.0            ,""            							,"Trap assisted tunneling current width dependence" ) 
+`MPRnb( NJTS           ,20.0           ,""            							,"Non-ideality factor for JTSS" ) 
+`MPRnb( NJTSD          ,NJTS           ,""            							,"Non-ideality factor for JTSD" ) 
+`MPRnb( NJTSSW         ,20.0           ,""            							,"Non-ideality factor for JTSSWS" ) 
+`MPRnb( NJTSSWD        ,NJTSSW         ,""            							,"Non-ideality factor for JTSSWD" ) 
+`MPRnb( NJTSSWG        ,20.0           ,""            							,"Non-ideality factor for JTSSWGS" ) 
+`MPRnb( NJTSSWGD       ,NJTSSWG        ,""            							,"Non-ideality factor for JTSSWGD" ) 
+`MPRnb( VTSS           ,10.0           ,""            							,"Bottom source junction trap-assisted current voltage dependent parameter" ) 
+`MPRnb( VTSD           ,VTSS           ,""            							,"Bottom drain junction trap-assisted current voltage dependent parameter" ) 
+`MPRnb( VTSSWS         ,10.0           ,""            							,"Unit length trap-assisted current voltage dependent parameter for sidewall source junction" ) 
+												
+`MPRnb( VTSSWD         ,VTSSWS         ,""            							,"Unit length trap-assisted current voltage dependent parameter for sidewall drain junction" ) 
+												
+`MPRnb( VTSSWGS        ,10.0           ,""            							,"Unit length trap-assisted current voltage dependent parameter for gate-edge sidewall source junction" ) 
+												
+`MPRnb( VTSSWGD        ,VTSSWGS        ,""            							,"Unit length trap-assisted current voltage dependent parameter for gate-edge sidewall drain junction" ) 
+												
 
 // High-Speed/RF Model Parameters
 `ifdef __RGATEMOD__
-	parameter real XRCRG1	= 12.0;			    // 1st fitting parm the bias-dependent Rg //make it binnable
-	parameter real XRCRG2	= 1.0;			    // 2nd fitting parm the bias-dependent Rg  //make it binnable
+`MPRnb( XRCRG1         ,12.0           ,""            							,"1st fitting parm the bias-dependent Rg //make it binnable" ) 
+`MPRnb( XRCRG2         ,1.0            ,""           	 						,"2nd fitting parm the bias-dependent Rg  //make it binnable" ) 
 `endif
 `ifdef __RBODYMOD__
-	parameter real RBPB		= 50.0 from [0:inf);	// Resistance between bNodePrime and bNode [Ohm]
-	parameter real RBDB		= 50.0 from [0:inf);	// Resistance between bNode and dbNode [Ohm]
-	parameter real RBSB		= 50.0 from [0:inf);	// Resistance between bNode and sbNode [Ohm]
-	parameter real RBPS		= 50.0 from [0:inf);	// Resistance between bNodePrime and sbNode [Ohm]
-	parameter real RBPD		= 50.0 from [0:inf);	// Resistance between bNodePrime and bNode [Ohm]
-	parameter real GBMIN	= 1.0e-12 from [0:inf);	// Minimum body conductance
-	parameter real RBPS0	= 50.0 from (0:inf);	// Scaling prefactor for RBPS 50 Ohms
-	parameter real RBPSL	= 0.0 from [0:inf);		//Length Scaling parameter for RBPS
-	parameter real RBPSW	= 0.0 from [0:inf);		//Width Scaling parameter for RBPS
-	parameter real RBPSNF	= 0.0 from [0:inf);		//Number of fingers Scaling parameter for RBPS
-	parameter real RBPD0	= 50.0 from (0:inf);	//Scaling prefactor for RBPD
-	parameter real RBPDL	= 0.0 from [0:inf);		// Length Scaling parameter for RBPD
-	parameter real RBPDW	= 0.0 from [0:inf);		// Width Scaling parameter for RBPD
-	parameter real RBPDNF	= 0.0 from [0:inf);		// Number of fingers Scaling parameter for RBPD
-	parameter real RBPBX0	= 100.0 from (0:inf);	//Scaling prefactor for RBPBX
-	parameter real RBPBXL	= 0.0 from [0:inf);		// Length Scaling parameter for RBPBX
-	parameter real RBPBXW	= 0.0 from [0:inf);		// Width Scaling parameter for RBPBX
-	parameter real RBPBXNF	= 0.0 from [0:inf);		// Number of fingers Scaling parameter for RBPBX
-	parameter real RBPBY0	= 100.0 from (0:inf);	// Scaling prefactor for RBPBY
-	parameter real RBPBYL	= 0.0 from [0:inf);		// Length Scaling parameter for RBPBY
-	parameter real RBPBYW	= 0.0 from [0:inf);		// Width Scaling parameter for RBPBY
-	parameter real RBPBYNF	= 0.0 from [0:inf);		// Number of fingers Scaling parameter for RBPBY
-	parameter real RBSBX0	= 100.0 from (0:inf);	// Scaling prefactor for RBSBX
-	parameter real RBSBY0	= 100.0 from (0:inf);	// Scaling prefactor for RBSBY
-	parameter real RBDBX0	= 100.0 from (0:inf);	// Scaling prefactor for RBDBX
-	parameter real RBDBY0	= 100.0 from (0:inf);	// Scaling prefactor for RBDBY
-	parameter real RBSDBXL	= 0.0 from [0:inf);		// Length Scaling parameter for RBSBX and RBDBX
-	parameter real RBSDBXW	= 0.0 from [0:inf);		// Width Scaling parameter for RBSBX and RBDBX
-	parameter real RBSDBXNF	= 0.0 from [0:inf);		// Number of fingers Scaling parameter for RBSBX and RBDBX
-	parameter real RBSDBYL	= 0.0 from [0:inf);		// Length Scaling parameter for RBSBY and RBDBY
-	parameter real RBSDBYW	= 0.0 from [0:inf);		// Width Scaling parameter for RBSBY and RBDBY
-	parameter real RBSDBYNF	= 0.0 from [0:inf);		// Number of fingers Scaling parameter for RBSBY and RBDBY
+`MPRcz( GBMIN          ,1.0e-12        ,""            							,"Minimum body conductance" ) 
+`MPRoz( RBPS0          ,50.0           ,""            							,"Scaling prefactor for RBPS 50 Ohms" ) 
+`MPRcz( RBPSL          ,0.0            ,""            							,"" ) 
+`MPRcz( RBPSW          ,0.0            ,""            							,"" ) 
+`MPRcz( RBPSNF         ,0.0            ,""            							,"" ) 
+`MPRoz( RBPD0          ,50.0           ,""            							,"" ) 
+`MPRcz( RBPDL          ,0.0            ,""            							,"Length Scaling parameter for RBPD" ) 
+`MPRcz( RBPDW          ,0.0            ,""            							,"Width Scaling parameter for RBPD" ) 
+`MPRcz( RBPDNF         ,0.0            ,""            							,"Number of fingers Scaling parameter for RBPD" ) 
+`MPRoz( RBPBX0         ,100.0          ,""            							,"" ) 
+`MPRcz( RBPBXL         ,0.0            ,""            							,"Length Scaling parameter for RBPBX" ) 
+`MPRcz( RBPBXW         ,0.0            ,""            							,"Width Scaling parameter for RBPBX" ) 
+`MPRcz( RBPBXNF        ,0.0            ,""            							,"Number of fingers Scaling parameter for RBPBX" ) 
+`MPRoz( RBPBY0         ,100.0          ,""            							,"Scaling prefactor for RBPBY" ) 
+`MPRcz( RBPBYL         ,0.0            ,""            							,"Length Scaling parameter for RBPBY" ) 
+`MPRcz( RBPBYW         ,0.0            ,""            							,"Width Scaling parameter for RBPBY" ) 
+`MPRcz( RBPBYNF        ,0.0            ,""            							,"Number of fingers Scaling parameter for RBPBY" ) 
+`MPRoz( RBSBX0         ,100.0          ,""            							,"Scaling prefactor for RBSBX" ) 
+`MPRoz( RBSBY0         ,100.0          ,""            							,"Scaling prefactor for RBSBY" ) 
+`MPRoz( RBDBX0         ,100.0          ,""            							,"Scaling prefactor for RBDBX" ) 
+`MPRoz( RBDBY0         ,100.0          ,""            							,"Scaling prefactor for RBDBY" ) 
+`MPRcz( RBSDBXL        ,0.0            ,""            							,"Length Scaling parameter for RBSBX and RBDBX" ) 
+`MPRcz( RBSDBXW        ,0.0            ,""            							,"Width Scaling parameter for RBSBX and RBDBX" ) 
+`MPRcz( RBSDBXNF       ,0.0            ,""            							,"Number of fingers Scaling parameter for RBSBX and RBDBX" ) 
+`MPRcz( RBSDBYL        ,0.0            ,""            							,"Length Scaling parameter for RBSBY and RBDBY" ) 
+`MPRcz( RBSDBYW        ,0.0            ,""            							,"Width Scaling parameter for RBSBY and RBDBY" ) 
+`MPRcz( RBSDBYNF       ,0.0            ,""            							,"Number of fingers Scaling parameter for RBSBY and RBDBY" ) 
 `endif
 
 // Flicker Noise
-parameter real EF		= 1.0 from (0:2];		// Flicker Noise frequency exponent
-parameter real EM		= 4.1e7;
-parameter real NOIA		= 6.250e+40;
-parameter real NOIB		= 3.125e+25;
-parameter real NOIC		= 8.750e+8;
-parameter real LINTNOI	= 0.0;
+`MPRoc( EF             ,1.0            ,""            ,0           ,2           ,"Flicker Noise frequency exponent" ) 
+`MPRnb( EM             ,4.1e7          ,""            							,"" ) 
+`MPRnb( NOIA           ,6.250e+40      ,""            							,"" ) 
+`MPRnb( NOIB           ,3.125e+25      ,""            							,"" ) 
+`MPRnb( NOIC           ,8.750e+8       ,""            							,"" ) 
+`MPRnb( LINTNOI        ,0.0            ,""            							,"" ) 
 
 // Thermal Noise
-parameter real NTNOI = 1.0	from [0:inf);
+`MPRcz( NTNOI          ,1.0            ,""            							,"" ) 
 `ifdef __TNOISW__
-	parameter real RNOIA = 0.577;				// TNOIMOD = 1
-	parameter real RNOIB = 0.5164;				// TNOIMOD = 1
-	parameter real RNOIC = 0.395;				// TNOIMOD = 1
-	parameter real TNOIA = 0.0 from [0:inf);		// TNOIMOD = 1
-	parameter real TNOIB = 0.0 from [0:inf);		// TNOIMOD = 1
-	parameter real TNOIC = 0.0 from [0:inf);		// Correlation coefficient
+`MPRnb( RNOIA          ,0.577          ,""            							,"TNOIMOD = 1" ) 
+`MPRnb( RNOIB          ,0.5164         ,""            							,"TNOIMOD = 1" ) 
+`MPRnb( RNOIC          ,0.395          ,""            							,"TNOIMOD = 1" ) 
+`MPRoo( TNOIA          ,0.0            ,""           ,-inf 		   ,inf			,"TNOIMOD = 1" ) 
+`MPRoo( TNOIB          ,0.0            ,""           ,-inf 		   ,inf 		,"TNOIMOD = 1" ) 
+`MPRoo( TNOIC          ,0.0            ,""           ,-inf 		   ,inf 		,"Correlation coefficient" ) 
 `endif
 
 
 // Binning Parameters
-parameter integer BINUNIT	= 1		from [0:1]; //	Unit of L and W for Binning  
-							    //  1 : micro-meter, 0 : default
-parameter real DLBIN = 0.0;
-parameter real DWBIN = 0.0;
+`MPIcc( BINUNIT        ,1              ,""            ,0           ,1           ,"Unit of L and W for Binning, 1 : micro-meter, 0 : default" ) 
+													
+`MPRnb( DLBIN          ,0.0            ,""            							,"" ) 
+`MPRnb( DWBIN          ,0.0            ,""            							,"" ) 
 
 
 
 // Temperature Dependence Parameters
-parameter real TNOM 	= 27.0;					// Temperature at which the model was extracted (degrees)
-parameter real DTEMP 	= 0.0;					// Offset of Device Temperature
+`MPRnb( TNOM           ,27.0           ,"degrees"     							,"Temperature at which the model was extracted" ) 
+`MPRnb( DTEMP          ,0.0            ,""            							,"Offset of Device Temperature" ) 
 
-parameter real TBGASUB 	= 4.73e-4;				// Bandgap Temperature Coefficient (eV / degrees)
-parameter real TBGBSUB 	= 636.0;				// Bandgap Temperature Coefficient (degrees)
+`MPRnb( TBGASUB        ,4.73e-4        ,"eV / degrees"							,"Bandgap Temperature Coefficient" ) 
+`MPRnb( TBGBSUB        ,636.0          ,"degrees"     							,"Bandgap Temperature Coefficient" ) 
 
-parameter real TNFACTOR = 0.0;					// Temperature exponent for NFACTOR
+`MPRnb( TNFACTOR       ,0.0            ,""            							,"Temperature exponent for NFACTOR" ) 
 
-parameter real UTE 	= -1.5;					// Mobility temperature exponent
-parameter real LUTE 	= 0.0;
-parameter real WUTE 	= 0.0;
-parameter real PUTE 	= 0.0;
-parameter real UTEL 	= 0.0;					// Length Scaling parameter for UTE
+`MPRnb( UTE            ,-1.5           ,""            							,"Mobility temperature exponent" ) 
+`MPRnb( LUTE           ,0.0            ,""            							,"" ) 
+`MPRnb( WUTE           ,0.0            ,""            							,"" ) 
+`MPRnb( PUTE           ,0.0            ,""            							,"" ) 
+`MPRnb( UTEL           ,0.0            ,""            							,"Length Scaling parameter for UTE" ) 
 
-parameter real UA1	= 1.0e-3;				// Temperature coefficient for UA
-parameter real LUA1 	= 0.0;
-parameter real WUA1 	= 0.0;
-parameter real PUA1 	= 0.0;
-parameter real UA1L 	= 0.0;					// Length Scaling parameter for UA1
+`MPRnb( UA1            ,1.0e-3         ,""            							,"Temperature coefficient for UA" ) 
+`MPRnb( LUA1           ,0.0            ,""            							,"" ) 
+`MPRnb( WUA1           ,0.0            ,""            							,"" ) 
+`MPRnb( PUA1           ,0.0            ,""            							,"" ) 
+`MPRnb( UA1L           ,0.0            ,""            							,"Length Scaling parameter for UA1" ) 
 
-parameter real UC1	= 0.056e-9;				// Temperature coefficient for UC
-parameter real LUC1 	= 0.0;
-parameter real WUC1 	= 0.0;
-parameter real PUC1 	= 0.0;
-parameter real UD1	= 0.0;					// Temperature coefficient for UD
-parameter real LUD1 	= 0.0;
-parameter real WUD1 	= 0.0;
-parameter real PUD1 	= 0.0;
-parameter real UD1L 	= 0.0;					// Length Scaling parameter for UD1
+`MPRnb( UC1            ,0.056e-9       ,""            							,"Temperature coefficient for UC" ) 
+`MPRnb( LUC1           ,0.0            ,""            							,"" ) 
+`MPRnb( WUC1           ,0.0            ,""            							,"" ) 
+`MPRnb( PUC1           ,0.0            ,""            							,"" ) 
+`MPRnb( UD1            ,0.0            ,""            							,"Temperature coefficient for UD" ) 
+`MPRnb( LUD1           ,0.0            ,""            							,"" ) 
+`MPRnb( WUD1           ,0.0            ,""            							,"" ) 
+`MPRnb( PUD1           ,0.0            ,""            							,"" ) 
+`MPRnb( UD1L           ,0.0            ,""            							,"Length Scaling parameter for UD1" ) 
 
-parameter real UCSTE	= -4.775e-3;				// Temperature coefficient for UCS
-parameter real LUCSTE 	= 0.0;
-parameter real WUCSTE 	= 0.0;
-parameter real PUCSTE 	= 0.0;
+`MPRnb( UCSTE          ,-4.775e-3      ,""            							,"Temperature coefficient for UCS" ) 
+`MPRnb( LUCSTE         ,0.0            ,""            							,"" ) 
+`MPRnb( WUCSTE         ,0.0            ,""            							,"" ) 
+`MPRnb( PUCSTE         ,0.0            ,""            							,"" ) 
 
-parameter real TETA0	= 0.0;					// Temperature coefficient for ETA0
+`MPRnb( TETA0          ,0.0            ,""            							,"Temperature coefficient for ETA0" ) 
 
-parameter real PRT	= 0.0;					// Temperature coefficient for resistance
-parameter real LPRT 	= 0.0;
-parameter real WPRT 	= 0.0;
-parameter real PPRT 	= 0.0;
+`MPRnb( PRT            ,0.0            ,""            							,"Temperature coefficient for resistance" ) 
+`MPRnb( LPRT           ,0.0            ,""            							,"" ) 
+`MPRnb( WPRT           ,0.0            ,""            							,"" ) 
+`MPRnb( PPRT           ,0.0            ,""            							,"" ) 
 
-parameter real AT	= -1.56e-3;				// Temperature coefficient for saturation velocity
-parameter real LAT	= 0.0;
-parameter real WAT	= 0.0;
-parameter real PAT	= 0.0;
-parameter real ATL 	= 0.0;					// Length Scaling parameter for AT
+`MPRnb( AT             ,-1.56e-3       ,""            							,"Temperature coefficient for saturation velocity" ) 
+`MPRnb( LAT            ,0.0            ,""            							,"" ) 
+`MPRnb( WAT            ,0.0            ,""            							,"" ) 
+`MPRnb( PAT            ,0.0            ,""            							,"" ) 
+`MPRnb( ATL            ,0.0            ,""            							,"Length Scaling parameter for AT" ) 
 
-parameter real TDELTA	= 0.0;					// Temperature coefficient for DELTA
+`MPRnb( TDELTA         ,0.0            ,""            							,"Temperature coefficient for DELTA" ) 
 
-parameter real PTWGT	= 0.0;					// Temperature coefficient for PTWG
-parameter real LPTWGT	= 0.0;
-parameter real WPTWGT	= 0.0;
-parameter real PPTWGT	= 0.0;
-parameter real PTWGTL 	= 0.0;					// Length Scaling parameter for PTWGT
+`MPRnb( PTWGT          ,0.0            ,""            							,"Temperature coefficient for PTWG" ) 
+`MPRnb( LPTWGT         ,0.0            ,""            							,"" ) 
+`MPRnb( WPTWGT         ,0.0            ,""            							,"" ) 
+`MPRnb( PPTWGT         ,0.0            ,""            							,"" ) 
+`MPRnb( PTWGTL         ,0.0            ,""            							,"Length Scaling parameter for PTWGT" ) 
 
-parameter real KT1	= -0.11;				// Temperature coefficient for Vth
-parameter real KT1EXP	= 1.0 from (0:inf);			// Temperature coefficient for Vth
-parameter real KT1L	= 0.0;					// Temperature coefficient for Vth
-parameter real LKT1	= 0.0;
-parameter real WKT1	= 0.0;
-parameter real PKT1	= 0.0;
+`MPRnb( KT1            ,-0.11          ,""            							,"Temperature coefficient for Vth" ) 
+`MPRoz( KT1EXP         ,1.0            ,""            							,"Temperature coefficient for Vth" ) 
+`MPRnb( KT1L           ,0.0            ,""            							,"Temperature coefficient for Vth" ) 
+`MPRnb( LKT1           ,0.0            ,""            							,"" ) 
+`MPRnb( WKT1           ,0.0            ,""            							,"" ) 
+`MPRnb( PKT1           ,0.0            ,""            							,"" ) 
 
-parameter real KT2	= 0.022;				// Temperature coefficient for Vth
-parameter real LKT2	= 0.0;
-parameter real WKT2	= 0.0;
-parameter real PKT2	= 0.0;
+`MPRnb( KT2            ,0.022          ,""            							,"Temperature coefficient for Vth" ) 
+`MPRnb( LKT2           ,0.0            ,""            							,"" ) 
+`MPRnb( WKT2           ,0.0            ,""            							,"" ) 
+`MPRnb( PKT2           ,0.0            ,""            							,"" ) 
 
-parameter real IIT	= 0.0;					// Temperature coefficient for BETA0
-parameter real LIIT	= 0.0;
-parameter real WIIT	= 0.0;
-parameter real PIIT	= 0.0;
+`MPRnb( IIT            ,0.0            ,""            							,"Temperature coefficient for BETA0" ) 
+`MPRnb( LIIT           ,0.0            ,""            							,"" ) 
+`MPRnb( WIIT           ,0.0            ,""            							,"" ) 
+`MPRnb( PIIT           ,0.0            ,""            							,"" ) 
 
-parameter real IGT	= 2.5;					// Gate Current Temperature Dependence
-parameter real LIGT	= 0.0;
-parameter real WIGT	= 0.0;
-parameter real PIGT	= 0.0;
+`MPRnb( IGT            ,2.5            ,""            							,"Gate Current Temperature Dependence" ) 
+`MPRnb( LIGT           ,0.0            ,""            							,"" ) 
+`MPRnb( WIGT           ,0.0            ,""            							,"" ) 
+`MPRnb( PIGT           ,0.0            ,""            							,"" ) 
 
-parameter real TGIDL	= 0.0;					// Temperature coefficient for GIDL/GISL
-parameter real LTGIDL	= 0.0;
-parameter real WTGIDL	= 0.0;
-parameter real PTGIDL	= 0.0;
+`MPRnb( TGIDL          ,0.0            ,""           	 						,"Temperature coefficient for GIDL/GISL" ) 
+`MPRnb( LTGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( WTGIDL         ,0.0            ,""            							,"" ) 
+`MPRnb( PTGIDL         ,0.0            ,""            							,"" ) 
 
-parameter real TCJ 	= 0.0;					// Temperature coefficient for CJS/CJD
-parameter real TCJSW 	= 0.0;					// Temperature coefficient for CJSWS/CJSWD
-parameter real TCJSWG 	= 0.0;					// Temperature coefficient for CJSWGS/CJSWGD
-parameter real TPB 	= 0.0;					// Temperature coefficient for PBS/PBD
-parameter real TPBSW 	= 0.0;					// Temperature coefficient for PBSWS/PBSWD
-parameter real TPBSWG 	= 0.0;					// Temperature coefficient for PBSWGS/PBSWGD
-parameter real XTIS 	= 3.0;					// Source junction current temperature exponent
-parameter real XTID 	= XTIS;					// Drain junction current temperature exponent
-parameter real XTSS 	= 0.02;					// Power dependence of JTSS on temperature
-parameter real XTSD 	= XTSS;					// Power dependence of JTSD on temperature
-parameter real XTSSWS 	= 0.02;					// Power dependence of JTSSWS on temperature
-parameter real XTSSWD 	= XTSSWS;				// Power dependence of JTSSWD on temperature
-parameter real XTSSWGS 	= 0.02;					// Power dependence of JTSSWGS on temperature
-parameter real XTSSWGD 	= XTSSWGS;				// Power dependence of JTSSWGD on temperature
-parameter real TNJTS 	= 0.0;					// Temperature coefficient for NJTS
-parameter real TNJTSD 	= TNJTS;				// Temperature coefficient for NJTSD
-parameter real TNJTSSW 	= 0.0;					// Temperature coefficient for NJTSSW
-parameter real TNJTSSWD = TNJTSSW;				// Temperature coefficient for NJTSSWD
-parameter real TNJTSSWG = 0.0;					// Temperature coefficient for NJTSSWG
-parameter real TNJTSSWGD = TNJTSSWG;				// Temperature coefficient for NJTSSWGD
+`MPRnb( TCJ            ,0.0            ,""            							,"Temperature coefficient for CJS/CJD" ) 
+`MPRnb( TCJSW          ,0.0            ,""            							,"Temperature coefficient for CJSWS/CJSWD" ) 
+`MPRnb( TCJSWG         ,0.0            ,""            							,"Temperature coefficient for CJSWGS/CJSWGD" ) 
+`MPRnb( TPB            ,0.0            ,""            							,"Temperature coefficient for PBS/PBD" ) 
+`MPRnb( TPBSW          ,0.0            ,""            							,"Temperature coefficient for PBSWS/PBSWD" ) 
+`MPRnb( TPBSWG         ,0.0            ,""            							,"Temperature coefficient for PBSWGS/PBSWGD" ) 
+`MPRnb( XTIS           ,3.0            ,""            							,"Source junction current temperature exponent" ) 
+`MPRnb( XTID           ,XTIS           ,""            							,"Drain junction current temperature exponent" ) 
+`MPRnb( XTSS           ,0.02           ,""            							,"Power dependence of JTSS on temperature" ) 
+`MPRnb( XTSD           ,XTSS           ,""            							,"Power dependence of JTSD on temperature" ) 
+`MPRnb( XTSSWS         ,0.02           ,""            							,"Power dependence of JTSSWS on temperature" ) 
+`MPRnb( XTSSWD         ,XTSSWS         ,""            							,"Power dependence of JTSSWD on temperature" ) 
+`MPRnb( XTSSWGS        ,0.02           ,""            							,"Power dependence of JTSSWGS on temperature" ) 
+`MPRnb( XTSSWGD        ,XTSSWGS        ,""            							,"Power dependence of JTSSWGD on temperature" ) 
+`MPRnb( TNJTS          ,0.0            ,""            							,"Temperature coefficient for NJTS" ) 
+`MPRnb( TNJTSD         ,TNJTS          ,""            							,"Temperature coefficient for NJTSD" ) 
+`MPRnb( TNJTSSW        ,0.0            ,""            							,"Temperature coefficient for NJTSSW" ) 
+`MPRnb( TNJTSSWD       ,TNJTSSW        ,""            							,"Temperature coefficient for NJTSSWD" ) 
+`MPRnb( TNJTSSWG       ,0.0            ,""            							,"Temperature coefficient for NJTSSWG" ) 
+`MPRnb( TNJTSSWGD      ,TNJTSSWG       ,""            							,"Temperature coefficient for NJTSSWGD" ) 
 
 // Self Heating Parameter
-parameter real RTH0    = 0.0;                                   // Thermal resistance
-parameter real CTH0    = 1.0E-05;                               // Thermal capacitance
-parameter real WTH0    = 0.0;                                   // Width dependence coefficient for Rth and Cth
+`MPRnb( RTH0           ,0.0            ,""            							,"Thermal resistance" ) 
+`MPRnb( CTH0           ,1.0E-05        ,""            							,"Thermal capacitance" ) 
+`MPRnb( WTH0           ,0.0            ,""            							,"Width dependence coefficient for Rth and Cth" ) 
 
 //Stress related Parameter
-parameter real SA 	= 0.0;					// Distance between OD edge from Poly from one side
-parameter real SB 	= 0.0;					// Distance between OD edge from Poly from other side
-parameter real SD 	= 0.0;					// Distance between neighboring fingers
-parameter real SAREF 	= 1.0e-6 from (0:inf);			// Reference distance between OD edge from Poly from one side
-parameter real SBREF 	= 1.0e-6 from (0:inf);			// Reference distance between OD edge from Poly from other side
-parameter real WLOD 	= 0.0	 from [0:inf);			// Width Parameter for Stress Effect
-parameter real KU0 	= 0.0;					// Mobility degradation/enhancement Parameter for Stress Effect
-parameter real KVSAT 	= 0.0;					// Saturation Velocity degradation/enhancement Parameter for Stress Effect
-parameter real TKU0 	= 0.0;					// Temperature Coefficient for KU0
-parameter real LKU0 	= 0.0;					// Length Dependence of KU0
-parameter real WKU0 	= 0.0;					// Width Dependence of KU0
-parameter real PKU0 	= 0.0;					// Cross Term Dependence of KU0
-parameter real LLODKU0 	= 0.0;					// Length Parameter for u0 stress effect
-parameter real WLODKU0 	= 0.0;					// Width Parameter for u0 stress effect
-parameter real KVTH0 	= 0.0;					// Threshold Shift parameter for stress effect
-parameter real LKVTH0 	= 0.0;					// Length dependence of KVTH0
-parameter real WKVTH0 	= 0.0;					// Width dependence of KVTH0
-parameter real PKVTH0 	= 0.0;					// Cross-term dependence of KVTH0
-parameter real LLODVTH 	= 0.0;					// Length Parameter for Vth stress effect
-parameter real WLODVTH 	= 0.0;					// Width Parameter for Vth stress effect
-parameter real STK2 	= 0.0;					// K2 shift factor related to Vth change
-parameter real LODK2 	= 0.0;					// K2 shift modification factor for stress effect
-parameter real STETA0 	= 0.0;					// eta0 shift related to Vth0 change
-parameter real LODETA0 	= 0.0;					// eta0 modification foator for stress effect
+`MPRoz( SAREF          ,1.0e-6         ,""            							,"Reference distance between OD edge from Poly from one side" ) 
+`MPRoz( SBREF          ,1.0e-6         ,""            							,"Reference distance between OD edge from Poly from other side" ) 
+`MPRcz( WLOD           ,0.0            ,""            							,"Width Parameter for Stress Effect" ) 
+`MPRnb( KU0            ,0.0            ,""            							,"Mobility degradation/enhancement Parameter for Stress Effect" ) 
+`MPRnb( KVSAT          ,0.0            ,""            							,"Saturation Velocity degradation/enhancement Parameter for Stress Effect" ) 
+`MPRnb( TKU0           ,0.0            ,""            							,"Temperature Coefficient for KU0" ) 
+`MPRnb( LKU0           ,0.0            ,""            							,"Length Dependence of KU0" ) 
+`MPRnb( WKU0           ,0.0            ,""            							,"Width Dependence of KU0" ) 
+`MPRnb( PKU0           ,0.0            ,""            							,"Cross Term Dependence of KU0" ) 
+`MPRnb( LLODKU0        ,0.0            ,""            							,"Length Parameter for u0 stress effect" ) 
+`MPRnb( WLODKU0        ,0.0            ,""            							,"Width Parameter for u0 stress effect" ) 
+`MPRnb( KVTH0          ,0.0            ,""            							,"Threshold Shift parameter for stress effect" ) 
+`MPRnb( LKVTH0         ,0.0            ,""            							,"Length dependence of KVTH0" ) 
+`MPRnb( WKVTH0         ,0.0            ,""            							,"Width dependence of KVTH0" ) 
+`MPRnb( PKVTH0         ,0.0            ,""            							,"Cross-term dependence of KVTH0" ) 
+`MPRnb( LLODVTH        ,0.0            ,""            							,"Length Parameter for Vth stress effect" ) 
+`MPRnb( WLODVTH        ,0.0            ,""            							,"Width Parameter for Vth stress effect" ) 
+`MPRnb( STK2           ,0.0            ,""            							,"K2 shift factor related to Vth change" ) 
+`MPRnb( LODK2          ,0.0            ,""            							,"K2 shift modification factor for stress effect" ) 
+`MPRnb( STETA0         ,0.0            ,""            							,"eta0 shift related to Vth0 change" ) 
+`MPRnb( LODETA0        ,0.0            ,""            							,"eta0 modification foator for stress effect" ) 
 //Well Proximity Parameters
-parameter real SCA 	= 0.0;					//Integration of first distribution function for scattered well dopant
-parameter real SCB 	= 0.0;					//Integration of second distribution function for scattered well dopant
-parameter real SCC 	= 0.0;					//Integration of second distribution function for scattered well dopant
-parameter real SC 	= 0.0;					//Distance to a single well edge
-parameter real WEB 	= 0.0;					//Coefficient for SCB
-parameter real WEC 	= 0.0;					//Coefficient for SCC
-parameter real KVTH0WE 	= 0.0;					//Vth shift for well proximity effect
-parameter real LKVTH0WE = 0.0;					
-parameter real WKVTH0WE = 0.0;					
-parameter real PKVTH0WE = 0.0;					
-parameter real K2WE 	= 0.0;					//K2 shift for well proximity effect
-parameter real LK2WE 	= 0.0;
-parameter real WK2WE 	= 0.0;
-parameter real PK2WE 	= 0.0;
-parameter real KU0WE 	= 0.0;					//Mobility degradation factor for well proximity effect
-parameter real LKU0WE 	= 0.0;
-parameter real WKU0WE 	= 0.0;
-parameter real PKU0WE 	= 0.0;
-parameter real SCREF 	= 1.0e-6;				//Reference distance to calculate SCA,SCB and SCC
+`MPRnb( WEB            ,0.0            ,""            							,"" ) 
+`MPRnb( WEC            ,0.0            ,""            							,"" ) 
+`MPRnb( KVTH0WE        ,0.0            ,""            							,"" ) 
+`MPRnb( LKVTH0WE       ,0.0            ,""            							,"" ) 
+`MPRnb( WKVTH0WE       ,0.0            ,""            							,"" ) 
+`MPRnb( PKVTH0WE       ,0.0            ,""            							,"" ) 
+`MPRnb( K2WE           ,0.0            ,""            							,"" ) 
+`MPRnb( LK2WE          ,0.0            ,""            							,"" ) 
+`MPRnb( WK2WE          ,0.0            ,""            							,"" ) 
+`MPRnb( PK2WE          ,0.0            ,""            							,"" ) 
+`MPRnb( KU0WE          ,0.0            ,""            							,"" ) 
+`MPRnb( LKU0WE         ,0.0            ,""            							,"" ) 
+`MPRnb( WKU0WE         ,0.0            ,""            							,"" ) 
+`MPRnb( PKU0WE         ,0.0            ,""            							,"" ) 
+`MPRoo( SCREF          ,1.0e-6         ,""            ,0		   ,inf			,"" ) 
 
-
-// GMIN - added for convergence
-parameter real GMIN		= $simparam("gmin", 1.0e-15);
-
+// STI Edge FET Device Parameters
+`MPIcc( EDGEFET        ,1              ,""            ,0           ,1           ,"0: Edge FET Model Off, 1: Edge FET Model ON" ) 
+`MPRco( WEDGE          ,10.0e-9        ,""            ,1.0e-9      ,inf         ,"" ) 
+`MPRoo( DGAMMAEDGE         ,0.0            ,""            ,-inf        ,inf         ,"" ) 
+`MPRoo( DGAMMAEDGEL        ,0.0            ,""            ,-inf        ,inf         ,"" ) 
+`MPRoo( DGAMMAEDGELEXP     ,1.0            ,""            ,-inf        ,inf         ,"" ) 
+`MPRoo( DVTEDGE        ,0.0            ,""            ,-inf        ,inf         ,"Vth shift for Edge FET" ) 
+`MPRnb( NFACTOREDGE    ,NFACTOR        ,""            							,"" ) 
+`MPRnb( CITEDGE        ,CIT            ,""            							,"" ) 
+`MPRnb( CDSCDEDGE      ,CDSCD          ,""            							,"" ) 
+`MPRnb( CDSCBEDGE      ,CDSCB          ,""            							,"" ) 
+`MPRnb( ETA0EDGE       ,ETA0           ,""           				 			,"" ) 
+`MPRnb( ETABEDGE       ,ETAB           ,""            							,"" ) 
+`MPRnb( KT1EDGE        ,KT1            ,""            							,"" ) 
+`MPRnb( KT1LEDGE       ,KT1L           ,""            							,"" ) 
+`MPRnb( KT2EDGE        ,KT2            ,""            							,"" ) 
+`MPRnb( KT1EXPEDGE     ,KT1EXP         ,""            							,"" ) 
+`MPRnb( TNFACTOREDGE   ,TNFACTOR       ,""            							,"" ) 
+`MPRnb( TETA0EDGE      ,TETA0          ,""            							,"" ) 
+`MPRnb( DVT0EDGE       ,2.2            ,""            							,"" ) 
+`MPRnb( DVT1EDGE       ,0.53           ,""            							,"" ) 
+`MPRnb( DVT2EDGE       ,0.0            ,""            							,"Body-bias coefficient for SCE effect for Edge FET" ) 
 // ***********************************
 //   Variables
 // ***********************************
@@ -1550,14 +1738,14 @@ real T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12;
 real Tb;
 real epssi, epsox, ni, Weff, Leff, Weff1, Leff1, Wact, Lact, Weffcj, Eg, Eg0;
 real dLIV, dWIV, dLB, dWB, dLCV, dWCV, dWJ, Cox, epsratio;
-real Vdb_noswap, Vsb_noswap, Vgs_noswap, Vgd_noswap;
+real Vdb_noswap, Vsb_noswap, Vgs_noswap, Vgd_noswap, Vds_noswap;
 real sigvds, vfb, vgfb, vgfbCV, Vbsx, Vfbsdr;
 real Vg, vg, Vd, Vs, vs, Vds, Vdsx, Vgs_eff, Vgd_eff;
 real Vth_shift;
 real qia, qba, qiaCV, qbaCV, qbs, qbd, qb, dps, phib, phib_n;
 real nq, psip, psiavg, psipclamp, sqrtpsisa, sqrtpsisainv, sqrtpsip;
 real Cdep, Lnew, L_mult, Wnew, W_mult;
-
+real wf, wr;
 // Short Channel Effects
 real n, Fp, nVt, inv_nVt, Vt, inv_Vt;
 real PhistVbs, sqrtPhistVbs, Xdep, cdsc;
@@ -1570,12 +1758,12 @@ real gam, inv_gam, Phist, sqrtPhist, litl;
 real qis, qdsat, Eeffs, Dmobs, Esat, EsatL, Vdsat, LambdaC_by2, LambdaC;
 real Vdseff, Vdssat, VdssatCV, vdeff, vdsat, qdeff, vdsatcv, VdsatCV;
 real ln_T1_T2;
-
+real A1_i, A11_i, A1_t, A2_i, A21_i, A2_t, Nsat;
 // Mobility Degradation
 real EeffFactor, Eeffm, ueff, eta_mu, Dmob, Dtot;
 
 // Velocity Saturation
-real zsat, Dvsat, Dptwg, PSAT_i;
+real zsat, Dvsat, Dptwg, PSAT_i, PSATR_i, PSAT_a;
 
 // Output Conductance
 real diffVds, VaDITS, VaSCBE, Vasat;
@@ -1648,12 +1836,13 @@ real Gtnoi, sidn, Nt;
 `endif
 
 // Temperature Effects
+real delTemp1;
 real DevTemp, Tnom, Vtm, Vtm0;
 real TRatio, delTemp;
-real U0_t, UA_t, UC_t, UD_t, UCS_t, rdstemp, VSAT_t, VSATCV_t;
-real DELTA_t, PTWG_t, BETA0_t, BGIDL_t, BGISL_t;
+real U0_t, U0R_t, UA_t, UAR_t, UC_t, UCR_t, UD_t, UDR_t, UCS_t, UCSR_t, rdstemp, VSAT_t, VSATR_t, VSATCV_t;
+real DELTA_t, PTWG_t, PTWGR_t, BETA0_t, BGIDL_t, BGISL_t;
 real igtemp;
-real ETA0_t, NFACTOR_t;
+real ETA0_t, ETA0R_t, NFACTOR_t;
 
 //Diode temperature effects
 real CJS_t, CJSWS_t, CJSWGD_t, CJD_t, CJSWD_t, CJSWGS_t;
@@ -1671,14 +1860,14 @@ real L_WLN, W_WWN, LW_WLN_WWN, L_WLN1, W_WWN1, LW_WLN_WWN1;
 real Inv_L, Inv_W, Inv_WL, Inv_Lact, Inv_Wact, Inv_Llong, Inv_Wwide;
 real BIN_L, BIN_W, BIN_WL;
 real NGATE_i, NSD_i, NDEP_i, VFB_i;
-real CIT_i, CDSCD_i, CDSCB_i, NFACTOR_i;
-real PHIN_i, ETA0_i, ETAB_i, K2_i;
+real CIT_i, CDSCD_i, CDSCDR_i, CDSCD_a, CDSCB_i, NFACTOR_i;
+real PHIN_i, ETA0_i, ETA0R_i, ETA0_a, ETAB_i, K2_i, K1_i;
 real DELTA_i;
-real U0_i, VSAT_i, VSATCV_i, UA_i, EU_i, UD_i, UCS_i, UC_i;
-real PDIBLC_i, PDIBLCB_i, PSCBE1_i, PSCBE2_i, PDITS_i, PDITSD_i, FPROUT_i;
+real U0_i, U0R_i, U0_a, VSAT_i, VSATR_i, VSAT_a, VSATCV_i, UA_i, UAR_i, UA_a, EU_i, UD_i, UDR_i, UD_a, UCS_i, UCSR_i, UCS_a, UC_i, UCR_i, UC_a;
+real PDIBLC_i, PDIBLCR_i, PDIBLC_a, PDIBLCB_i, PSCBE1_i, PSCBE2_i, PDITS_i, PDITSD_i, FPROUT_i;
 real PRWG_i, WR_i, RDWMIN_i, RSWMIN_i, RDW_i, RSW_i, RDSW_i, RDSWMIN_i;
-real PTWG_i, PVAG_i, XJ_i;
-real PCLM_i, PCLMCV_i, PRWB_i;
+real PTWG_i, PTWGR_i, PTWG_a, PVAG_i, XJ_i;
+real PCLM_i, PCLMR_i, PCLM_a, PCLMCV_i, PRWB_i;
 real CF_i, CGSL_i, CGDL_i, CKAPPAS_i, CKAPPAD_i;
 real VFBCV_i, NDEPCV_i;
 real ALPHA0_i, BETA0_i;
@@ -1700,117 +1889,116 @@ real mu0_mult, vsat_mult, vth0_stress, k2_stress, eta_stress;
 integer i;
 
 //Well Proximity effect
-real vth0_well, k2_well, mu_well;
+real vth0_well, k2_well, mu_well, Wdrn, local_sca, local_scb, local_scc;
 
+//Edge FET Model Variables
+real ids_edge, ETA0EDGE_t, NFACTOREDGE_t, Vbi, theta_sce_edge, dvth_dibl, dvth_sce, litl_edge, DGAMMAEDGE_i, vdsatedge, Vdsatedge, Vdssate ; 
 
 // The following are used by the macro definitions (GEOMOD and RGEOMOD )
 real nuIntD, nuEndD, nuIntS, nuEndS;
 real Rint, Rend;
 
+
+//VTH variables
+real q_vth, psip_th;
+
+ 
 // Self Heating
 `ifdef __SHMOD__
 	real gth, cth;
 `endif
 
 // ---- OPERATING POINT VARIABLES ----
+`OPP( QBI      , "C"   , "Intrinsic Body Charge")
+`OPP( QSI      , "C"   , "Intrinsic Source Charge")
+`OPP( QDI      , "C"   , "Intrinsic Drain Charge")
+`OPP( QGI      , "C"   , "Intrinsic Gate Charge")
+`OPP( CGGI     , "F"   , " Intrinsic g-g MOSFET capacitance")
+`OPP( CGBI     , "F"   , " Intrinsic g-b MOSFET capacitance")
+`OPP( CGSI     , "F"   , " Intrinsic g-s MOSFET capacitance")
+`OPP( CGDI     , "F"   , " Intrinsic g-d MOSFET capacitance")
+`OPP( CSGI     , "F"   , " Intrinsic s-g MOSFET capacitance")
+`OPP( CSBI     , "F"   , " Intrinsic s-b MOSFET capacitance")
+`OPP( CSSI     , "F"   , " Intrinsic s-s MOSFET capacitance")
+`OPP( CSDI     , "F"   , " Intrinsic s-d MOSFET capacitance")
+`OPP( CDGI     , "F"   , " Intrinsic d-g MOSFET capacitance")
+`OPP( CDBI     , "F"   , " Intrinsic d-b MOSFET capacitance")
+`OPP( CDSI     , "F"   , " Intrinsic d-s MOSFET capacitance")
+`OPP( CDDI     , "F"   , " Intrinsic d-d MOSFET capacitance")
+`OPP( CBGI     , "F"   , " Intrinsic b-g MOSFET capacitance")
+`OPP( CBBI     , "F"   , " Intrinsic b-b MOSFET capacitance")
+`OPP( CBSI     , "F"   , " Intrinsic b-s MOSFET capacitance")
+`OPP( CBDI     , "F"   , " Intrinsic b-d MOSFET capacitance")
+`OPP( QB       , "C"   , "Body Charge")
+`OPP( QS       , "C"   , "Source Charge")
+`OPP( QD       , "C"   , "Drain Charge")
+`OPP( QG       , "C"   , "Gate Charge")
+`OPP( CGG      , "F"   , "g-g MOSFET capacitance")
+`OPP( CGB      , "F"   , "g-b MOSFET capacitance")
+`OPP( CGS      , "F"   , "g-s MOSFET capacitance")
+`OPP( CGD      , "F"   , "g-d MOSFET capacitance")
+`OPP( CSG      , "F"   , "s-g MOSFET capacitance")
+`OPP( CSB      , "F"   , "s-b MOSFET capacitance")
+`OPP( CSS      , "F"   , "s-s MOSFET capacitance")
+`OPP( CSD      , "F"   , "s-d MOSFET capacitance")
+`OPP( CDG      , "F"   , "d-g MOSFET capacitance")
+`OPP( CDB      , "F"   , "d-b MOSFET capacitance")
+`OPP( CDS      , "F"   , "d-s MOSFET capacitance")
+`OPP( CDD      , "F"   , "d-d MOSFET capacitance")
+`OPP( CBG      , "F"   , "b-g MOSFET capacitance")
+`OPP( CBB      , "F"   , "b-b MOSFET capacitance")
+`OPP( CBS      , "F"   , "b-s MOSFET capacitance")
+`OPP( CBD      , "F"   , "b-d MOSFET capacitance")
+`OPP( ISUB     , "A"   , "Substrate Current")
+`OPP( IGIDL    , "A"   , "")
+`OPP( IGISL    , "A"   , "")
+`OPP( IGS      , "A"   , "")
+`OPP( IGD      , "A"   , "")
+`OPP( IGCS     , "A"   , "")
+`OPP( IGCD     , "A"   , "")
+`OPP( IGB      , "A"   , "")
+`OPP( CGSEXT   , "F"   , "")
+`OPP( CGDEXT   , "F"   , "")
+`OPP( CGBOV    , "F"   , "Front Gate Charge")
+`OPP( CAPBS    , "F"   , "")
+`OPP( CAPBD    , "F"   , "")
+`OPP( WEFF     , "m"   , "")
+`OPP( LEFF     , "m"   , "")
+`OPP( WEFFCV   , "m"   , "")
+`OPP( LEFFCV   , "m"   , "")
+`OPP( IDS      , "A"   , "Drain-Source current")
+`OPP( IDEFF    , "A"   , "Effective drain Current")
+`OPP( ISEFF    , "A"   , "Effective Source Current")
+`OPP( IGEFF    , "A"   , "Effective Gate Current")
+`OPP( IBS      , "A"   , "")
+`OPP( IBD      , "A"   , "")
+`OPP( VDS      , "V"   , "Drain to Source Voltage")
+`OPP( VGS      , "V"   , "Gate to Source Voltage")
+`OPP( VBS      , "V"   , "Body to Source Voltage")
+`OPP( VDSAT    , "V"   , "")
+`OPP( GM       , "mho" , "")
+`OPP( GMBS     , "mho" , "")
+`OPP( GDS      , "mho" , "")
+`OPP( TK       , "m"   , "")
+`OPP( VTH      , "V"   , "Threshold Voltage")
 
-(* desc="QBI"	*) real QBI;
-(* desc="QSI"	*) real QSI;
-(* desc="QDI"	*) real QDI;
-(* desc="QGI"	*) real QGI;
 
-(* desc="CGGI"	*) real CGGI;
-(* desc="CGBI"	*) real CGBI;
-(* desc="CGSI"	*) real CGSI;
-(* desc="CGDI"	*) real CGDI;
-
-(* desc="CSGI"	*) real CSGI;
-(* desc="CSBI"	*) real CSBI;
-(* desc="CSSI"	*) real CSSI;
-(* desc="CSDI"	*) real CSDI;
-
-(* desc="CDGI"	*) real CDGI;
-(* desc="CDBI"	*) real CDBI;
-(* desc="CDSI"	*) real CDSI;
-(* desc="CDDI"	*) real CDDI;
-
-(* desc="CBGI"	*) real CBGI;
-(* desc="CBBI"	*) real CBBI;
-(* desc="CBSI"	*) real CBSI;
-(* desc="CBDI"	*) real CBDI;
-
-(* desc="QB"	*) real QB;
-(* desc="QS"	*) real QS;
-(* desc="QD"	*) real QD;
-(* desc="QG"	*) real QG;
-
-(* desc="CGG"	*) real CGG;
-(* desc="CGB"	*) real CGB;
-(* desc="CGS"	*) real CGS;
-(* desc="CGD"	*) real CGD;
-
-(* desc="CSG"	*) real CSG;
-(* desc="CSB"	*) real CSB;
-(* desc="CSS"	*) real CSS;
-(* desc="CSD"	*) real CSD;
-
-(* desc="CDG"	*) real CDG;
-(* desc="CDB"	*) real CDB;
-(* desc="CDS"	*) real CDS;
-(* desc="CDD"	*) real CDD;
-
-(* desc="CBG"	*) real CBG;
-(* desc="CBB"	*) real CBB;
-(* desc="CBS"	*) real CBS;
-(* desc="CBD"	*) real CBD;
-
-(* desc="ISUB"	*) real ISUB;
-(* desc="IGIDL"	*) real IGIDL;
-(* desc="IGISL"	*) real IGISL;
-
-(* desc="IGS"	*) real IGS;
-(* desc="IGD"	*) real IGD;
-(* desc="IGCS"	*) real IGCS;
-(* desc="IGCD"	*) real IGCD;
-(* desc="IGB"	*) real IGB;
-
-(* desc="CGSEXT"*) real CGSEXT;
-(* desc="CGDEXT"*) real CGDEXT;
-(* desc="CGBOV"	*) real CGBOV;
-
-(* desc="CAPBS"	*) real CAPBS;
-(* desc="CAPBD"	*) real CAPBD;
-
-(* desc="WEFF"	*) real WEFF;
-(* desc="LEFF"	*) real LEFF;
-(* desc="WEFFCV"*) real WEFFCV;
-(* desc="LEFFCV"*) real LEFFCV;
-
-(* desc="IDS"	*) real IDS;
-(* desc="IDEFF"	*) real IDEFF;
-(* desc="ISEFF"	*) real ISEFF;
-(* desc="IGEFF"	*) real IGEFF;
-(* desc="IBS"	*) real IBS;
-(* desc="IBD"	*) real IBD;
-
-(* desc="VDS"	*) real VDS;
-(* desc="VGS"	*) real VGS;
-(* desc="VBS"	*) real VBS;
-(* desc="VDSAT"*) real VDSAT;
-
-(* desc="GM"	*) real GM;
-(* desc="GMBS"	*) real GMBS;
-(* desc="GDS"	*) real GDS;
-(* desc="TK"	*) real TK;
-
-// Self Heating
-`ifdef __SHMOD__
-    thermal t;
-    branch (t) rth_branch;
-    branch (t) ith_branch;
-`endif 
+    `ifdef __SHMOD__
+        thermal t;
+    `else
+       `ifdef __THERMAL_NODE__
+          thermal t;
+       `endif
+    `endif    
 
 analog begin
+	// Variable initialization to prevent hidden states
+	CDSCDR_i = 0; ETA0R_i   = 0; ETA0R_t = 0; L_LLN1  = 0; L_WLN1  = 0; 
+	PCLMR_i  = 0; PDIBLCR_i = 0; PSATR_i = 0; PTWGR_i = 0; PTWGR_t = 0;
+	U0R_i    = 0; U0R_t     = 0; UAR_i   = 0; UAR_t   = 0; UCR_i   = 0; UCR_t   = 0; 
+	UCSR_i   = 0; UCSR_t    = 0; UDR_i   = 0; UDR_t   = 0; UD_a    = 0; VSATR_i = 0; 
+	VSATR_t  = 0; W_LWN1    = 0; W_WWN1  = 0;
+
 	// Bias independent calculations
 	if( TYPE == `ntype ) devsign = 1;
 	else devsign = -1;
@@ -1902,6 +2090,8 @@ analog begin
 	Inv_WL		= Inv_L * Inv_W;
 
 	// Effective Length and Width for Binning
+	L_LLN1		= L_LLN;
+	L_WLN1		= L_WLN;
 	if (DLBIN != 0) begin
 			if(DLBIN<=-Lnew) begin
 				$strobe("Fatal: DLBIN for  %M = %e is <= -Ldrawn*LMLT", DLBIN);
@@ -1910,10 +2100,10 @@ analog begin
 				L_LLN1		= pow(Lnew+DLBIN, -LLN);
 				L_WLN1		= pow(Lnew+DLBIN, -WLN);
 			end
-	end else begin
-		L_LLN1		= L_LLN;
-		L_WLN1		= L_WLN;
 	end
+		
+	W_LWN1      = W_LWN;
+	W_WWN1		= W_WWN;
 	if (DWBIN != 0) begin
 			if(DWBIN<=-Wnew) begin
 				$strobe("Fatal: DWBIN for  %M = %e is <= -Wdrawn*WMLT", DWBIN);
@@ -1922,10 +2112,8 @@ analog begin
 				W_LWN1		= pow(Wnew+DWBIN, -LWN);	
 				W_WWN1		= pow(Wnew+DWBIN, -WWN);
 			end
-	end else begin
-		W_LWN1          = W_LWN;
-		W_WWN1		= W_WWN;
 	end
+
 	LW_LLN_LWN1	= L_LLN1*W_LWN1;
 	dLB		= LINT + LL * L_LLN1 + LW * W_LWN1 + LWL * LW_LLN_LWN1;
 	LW_WLN_WWN1	= L_WLN1*W_WWN1;
@@ -1969,9 +2157,11 @@ analog begin
 	DVTP4_i		= DVTP4 	+ BIN_L * LDVTP4  	+ BIN_W * WDVTP4 	+ BIN_WL * PDVTP4 ;
 	DVTP5_i		= DVTP5 	+ BIN_L * LDVTP5  	+ BIN_W * WDVTP5  	+ BIN_WL * PDVTP5 ;
 	K2_i		= K2 		+ BIN_L * LK2  		+ BIN_W * WK2  		+ BIN_WL * PK2 ;
+	K1_i		= K1 		+ BIN_L * LK1  		+ BIN_W * WK1  		+ BIN_WL * PK1 ;
 	XJ_i		= XJ 		+ BIN_L * LXJ  		+ BIN_W * WXJ  		+ BIN_WL * PXJ ;
 	PHIN_i		= PHIN 		+ BIN_L * LPHIN  	+ BIN_W * WPHIN  	+ BIN_WL * PPHIN ;
 	ETA0_i		= ETA0 		+ BIN_L * LETA0  	+ BIN_W * WETA0  	+ BIN_WL * PETA0 ;
+	
 	ETAB_i		= ETAB 		+ BIN_L * LETAB  	+ BIN_W * WETAB  	+ BIN_WL * PETAB ;
 	DELTA_i		= DELTA 	+ BIN_L * LDELTA  	+ BIN_W * WDELTA 	+ BIN_WL * PDELTA ;
 	U0_i		= U0 		+ BIN_L * LU0  		+ BIN_W * WU0  		+ BIN_WL * PU0 ;
@@ -2066,6 +2256,26 @@ analog begin
 	KT2_i 		= KT2 		+ BIN_L * LKT2 		+ BIN_W * WKT2 		+ BIN_WL * PKT2;
 	PSATB_i		= PSATB 	+ BIN_L * LPSATB 	+ BIN_W * WPSATB	+ BIN_WL * PPSATB;
 
+	A1_i		= A1		+ BIN_L * LA1 		+ BIN_W * WA1		+ BIN_WL * PA1;
+	A11_i		= A11		+ BIN_L * LA11 		+ BIN_W * WA11		+ BIN_WL * PA11;
+	A2_i		= A2		+ BIN_L * LA2 		+ BIN_W * WA2		+ BIN_WL * PA2;
+	A21_i		= A21		+ BIN_L * LA21 		+ BIN_W * WA21		+ BIN_WL * PA21;
+
+	if(ASYMMOD != 0) begin
+		CDSCDR_i	= CDSCDR 	+ BIN_L * LCDSCDR  	+ BIN_W * WCDSCDR  	+ BIN_WL * PCDSCDR ;
+		ETA0R_i		= ETA0R		+ BIN_L * LETA0R  	+ BIN_W * WETA0R  	+ BIN_WL * PETA0R ;
+		U0R_i		= U0R 		+ BIN_L * LU0R  	+ BIN_W * WU0R 		+ BIN_WL * PU0R ;
+		UAR_i		= UAR 		+ BIN_L * LUAR 		+ BIN_W * WUAR  	+ BIN_WL * PUAR ;
+		UDR_i		= UDR 		+ BIN_L * LUDR  	+ BIN_W * WUDR		+ BIN_WL * PUDR ;
+		UCSR_i		= UCSR 		+ BIN_L * LUCSR 	+ BIN_W * WUCSR 	+ BIN_WL * PUCSR;
+		UCR_i		= UCR 		+ BIN_L * LUCR 		+ BIN_W * WUCR 		+ BIN_WL * PUCR;
+		PCLMR_i		= PCLMR 	+ BIN_L * LPCLMR  	+ BIN_W * WPCLMR  	+ BIN_WL * PPCLMR ;	
+		PDIBLCR_i	= PDIBLCR 	+ BIN_L * LPDIBLCR  	+ BIN_W * WPDIBLCR  	+ BIN_WL * PPDIBLCR ;	
+		VSATR_i		= VSATR 	+ BIN_L * LVSATR	+ BIN_W * WVSATR  	+ BIN_WL * PVSATR ;
+		PSATR_i		= PSATR 	+ BIN_L * LPSATR 	+ BIN_W * WPSATR  	+ BIN_WL * PPSATR ;
+		PTWGR_i		= PTWGR 	+ BIN_L * LPTWGR  	+ BIN_W * WPTWGR  	+ BIN_WL * PPTWGR ;	
+	end
+
 	// Geometrical scaling
 	T0 = NDEPL1 * max( pow(Inv_L, NDEPLEXP1) - pow(Inv_Llong, NDEPLEXP1), 0) + NDEPL2 * max( pow(Inv_L, NDEPLEXP2) - pow(Inv_Llong, NDEPLEXP2), 0);
 	T1 = NDEPW * max( pow(Inv_W, NDEPWEXP) - pow(Inv_Wwide, NDEPWEXP), 0) + NDEPWL * pow(Inv_W * Inv_L, NDEPWLEXP);
@@ -2075,44 +2285,82 @@ analog begin
 	T1 = NFACTORW * max( pow(Inv_W, NFACTORWEXP) - pow(Inv_Wwide, NFACTORWEXP), 0) + NFACTORWL * pow(Inv_WL, NFACTORWLEXP);
 	NFACTOR_i = NFACTOR_i * (1.0 + T0 + T1);
 
-	CDSCD_i = CDSCD_i * (1.0 + CDSCDL * max( pow(Inv_L, CDSCDLEXP) - pow(Inv_Llong, CDSCDLEXP), 0) );
+	T0 = (1.0 + CDSCDL * max( pow(Inv_L, CDSCDLEXP) - pow(Inv_Llong, CDSCDLEXP), 0) );	
+	CDSCD_i = CDSCD_i * T0;
+	if(ASYMMOD != 0)
+		CDSCDR_i = CDSCDR_i * T0;
 	CDSCB_i = CDSCB_i * (1.0 + CDSCBL * max( pow(Inv_L, CDSCBLEXP) - pow(Inv_Llong, CDSCBLEXP), 0) );
+	U0_i = MULU0 * U0_i;
 
-	if(U0LEXP > 0) begin
-		U0_i = U0_i * (1.0 - U0L * max( pow(Inv_L, U0LEXP) - pow(Inv_Llong, U0LEXP), 0));
-	end else
-		U0_i = U0_i * (1.0 - U0L);
+	if(MOBSCALE != 1) begin	
+		if(U0LEXP > 0) begin
+			U0_i = U0_i * (1.0 - U0L * max( pow(Inv_L, U0LEXP) - pow(Inv_Llong, U0LEXP), 0));
+			if(ASYMMOD != 0)
+				U0R_i = U0R_i * (1.0 - U0L * max( pow(Inv_L, U0LEXP) - pow(Inv_Llong, U0LEXP), 0));
+		end else begin
+			U0_i = U0_i * (1.0 - U0L);
+		    if(ASYMMOD != 0)
+			  	U0R_i = U0R_i * (1.0 - U0L);
+		end
+	end else begin
+   		U0_i = U0_i * (1.0 - (UP1 * exp(-Leff / LP1)) - (UP2 * exp(-Leff / LP2)));
+		if(ASYMMOD != 0)
+			U0R_i = U0R_i * (1.0 - (UP1 * exp(-Leff / LP1)) - (UP2 * exp(-Leff / LP2))); 
+	end
 
 	T0 = UAL * max( pow(Inv_L, UALEXP) - pow(Inv_Llong, UALEXP), 0);
 	T1 = UAW * max( pow(Inv_W, UAWEXP) - pow(Inv_Wwide, UAWEXP), 0) + UAWL * pow(Inv_WL, UAWLEXP);
 	UA_i = UA_i * (1.0 + T0 + T1);
-
+	if(ASYMMOD != 0)
+		UAR_i = UAR_i * (1.0 + T0 + T1);
 	T0 = EUL * max( pow(Inv_L, EULEXP) - pow(Inv_Llong, EULEXP), 0);
 	T1 = EUW * max( pow(Inv_W, EUWEXP) - pow(Inv_Wwide, EUWEXP), 0) + EUWL * pow(Inv_WL, EUWLEXP);
 	EU_i = EU_i * (1.0 + T0 + T1);
-
-	UD_i = UD_i * (1.0 + UDL * max( pow(Inv_L, UDLEXP) - pow(Inv_Llong, UDLEXP), 0));
+	T0 = 1.0 + UDL * max( pow(Inv_L, UDLEXP) - pow(Inv_Llong, UDLEXP), 0);
+	UD_i = UD_i * T0;
+	if(ASYMMOD != 0)
+		UDR_i = UDR_i * T0;
 	T0 = UCL * max( pow(Inv_L, UCLEXP) - pow(Inv_Llong, UCLEXP), 0);
 	T1 = UCW * max( pow(Inv_W, UCWEXP) - pow(Inv_Wwide, UCWEXP), 0) + UCWL * pow(Inv_WL, UCWLEXP);
 	UC_i = UC_i * (1.0 + T0 + T1);
+	if(ASYMMOD != 0)
+		UCR_i = UCR_i * (1.0 + T0 + T1);
+	T0 = max( pow(Inv_L, DSUB) - pow(Inv_Llong, DSUB), 0);
+	ETA0_i = ETA0_i * T0;
+	if(ASYMMOD != 0)
+		ETA0R_i = ETA0R_i * T0;
 
-	ETA0_i = ETA0_i * max( pow(Inv_L, DSUB) - pow(Inv_Llong, DSUB), 0);
 	ETAB_i = ETAB_i * max( pow(Inv_L, ETABEXP) - pow(Inv_Llong, ETABEXP), 0);
-	PDIBLC_i = PDIBLC_i * ( 1.0 + PDIBLCL * max( pow(Inv_L, PDIBLCLEXP) - pow(Inv_Llong, PDIBLCLEXP), 0));
+	T0 = 1.0 + PDIBLCL * max( pow(Inv_L, PDIBLCLEXP) - pow(Inv_Llong, PDIBLCLEXP), 0);	
+	PDIBLC_i = PDIBLC_i * T0;
+	if(ASYMMOD != 0)
+		PDIBLCR_i = PDIBLCR_i * T0;
 
 	T0 = DELTA_i * (1.0 + DELTAL * max( pow(Inv_L, DELTALEXP) - pow(Inv_Llong, DELTALEXP), 0));
 	DELTA_i = min(T0, 0.5);
-
 	FPROUT_i = FPROUT_i * (1.0 + FPROUTL * max( pow(Inv_L, FPROUTLEXP) - pow(Inv_Llong, FPROUTLEXP), 0));
-	PCLM_i = PCLM_i * (1.0 + PCLML * max( pow(Inv_L, PCLMLEXP) - pow(Inv_Llong, PCLMLEXP), 0));
+	T0 = (1.0 + PCLML * max( pow(Inv_L, PCLMLEXP) - pow(Inv_Llong, PCLMLEXP), 0));
+	PCLM_i = PCLM_i * T0;
 	PCLM_i = max(PCLM_i,0);
+	if(ASYMMOD != 0) begin
+		PCLMR_i = PCLMR_i * T0;
+		PCLMR_i = max(PCLMR_i,0);
+	end
 
 	T0 = VSATL * max( pow(Inv_L, VSATLEXP) - pow(Inv_Llong, VSATLEXP), 0);
 	T1 = VSATW * max( pow(Inv_W, VSATWEXP) - pow(Inv_Wwide, VSATWEXP), 0) + VSATWL * pow(Inv_WL, VSATWLEXP);
 	VSAT_i = VSAT_i * (1.0 + T0 + T1);
+	if(ASYMMOD != 0)
+		VSATR_i = VSATR_i * (1.0 + T0 + T1);
 
 	PSAT_i = max(PSAT_i * (1.0 + PSATL * max( pow(Inv_L, PSATLEXP) - pow(Inv_Llong, PSATLEXP), 0)), 0.25);
-	PTWG_i = PTWG_i * (1.0 + PTWGL * max( pow(Inv_L, PTWGLEXP) - pow(Inv_Llong, PTWGLEXP), 0));
+	if(ASYMMOD != 0)
+		PSATR_i = max(PSATR_i * (1.0 + PSATL * max( pow(Inv_L, PSATLEXP) - pow(Inv_Llong, PSATLEXP), 0)), 0.25);
+
+	T0=(1.0 + PTWGL * max( pow(Inv_L, PTWGLEXP) - pow(Inv_Llong, PTWGLEXP), 0));	
+	PTWG_i = PTWG_i * T0;
+	if(ASYMMOD != 0)
+		PTWGR_i = PTWGR_i * T0;
 
 	ALPHA0_i = ALPHA0_i * (1.0 + ALPHA0L * max( pow(Inv_L, ALPHA0LEXP) - pow(Inv_Llong, ALPHA0LEXP), 0));
 
@@ -2138,6 +2386,10 @@ analog begin
 	PCLMCV_i = PCLMCV_i * (1.0 + PCLMCVL * max( pow(Inv_Lact, PCLMCVLEXP) - pow(Inv_Llong, PCLMCVLEXP), 0));
 	PCLMCV_i = max(PCLMCV_i,0);
 
+	T0 = K1L * max( pow(Inv_L, K1LEXP) - pow(Inv_Llong, K1LEXP), 0);
+	T1 = K1W * max( pow(Inv_W, K1WEXP) - pow(Inv_Wwide, K1WEXP), 0) + K1WL * pow(Inv_WL, K1WLEXP);
+	K1_i = K1_i * (1.0 + T0 + T1);	
+	
 	T0 = K2L * max( pow(Inv_L, K2LEXP) - pow(Inv_Llong, K2LEXP), 0);
 	T1 = K2W * max( pow(Inv_W, K2WEXP) - pow(Inv_Wwide, K2WEXP), 0) + K2WL * pow(Inv_WL, K2WLEXP);
 	K2_i = K2_i * (1.0 + T0 + T1);
@@ -2150,8 +2402,16 @@ analog begin
 	UD1_i = UD1_i * (1.0 + Inv_L * UD1L);
 	AT_i = AT_i * (1.0 + Inv_L * ATL);
 	PTWGT_i = PTWGT_i * (1.0 + Inv_L * PTWGTL);
-
-
+ `ifdef __THERMAL_NODE__
+   if ($port_connected(t) == 0) begin
+     `ifdef __SHMOD__
+          $strobe("5 terminal Module, while 't' node is not connected, SH is activated.");
+     `else
+          Temp(t) <+ 0;
+          $strobe("5 terminal Module, while 't' node is not connected, SH is not activated.");
+     `endif
+   end
+ `endif
 `ifdef __RDSMOD__
 	if(RDSMOD == 1) begin
 		RSW_i = RSW_i * (1.0 + RSWL * max( pow(Inv_L, RSWLEXP) - pow(Inv_Llong, RSWLEXP), 0));
@@ -2162,7 +2422,8 @@ analog begin
 `ifdef __RDSMOD__
 	end
 `else
-	if(RDSMOD != 0)
+//Warning Message For RDSMOD
+	if(RDSMOD != 2)
 		$strobe("[BSIM6] Although the model selector RDSMOD is set to %d, the external source/drain resistance model was not activated when the Verilog-A code was compiled.  Please uncomment \"`define __RDSMOD__\" in the beginning of the Verilog-A code.", RDSMOD);
 `endif
 
@@ -2173,11 +2434,20 @@ analog begin
 	else if (UCS_i > 2.0)
 		UCS_i = 2.0;
 
-	if (UC_i < 0) begin
-		$strobe("Fatal: UC_i = %e is negative.", UC_i);
-		$finish(0);
-	end
+	
+	if(ASYMMOD != 0) begin
+		if (UCSR_i < 1.0)
+			UCSR_i = 1.0;
+		else if (UCSR_i > 2.0)
+			UCSR_i = 2.0;
 
+		if (UCR_i < 0) begin
+			$strobe("Fatal: UCR_i = %e is negative.", UCR_i);
+			$finish(0);
+		end	
+	end	
+		
+		
 	if (CGIDL_i < 0) begin
 		$strobe("Fatal: CGIDL_i = %e is negative.", CGIDL_i);
 		$finish(0);
@@ -2212,9 +2482,9 @@ analog begin
 		$strobe("Fatal: NFACTOR_i = %e is negative.", NFACTOR_i);
 		$finish(0);
 	end
-
-	if (K2_i > 0) begin
-		$strobe("Fatal: K2_i = %e is positive.", K2_i);
+	
+    if (K1_i < 0) begin
+		$strobe("Fatal: K1_i = %e is positive.", K1_i);
 		$finish(0);
 	end
 
@@ -2250,9 +2520,12 @@ analog begin
 		$strobe("Fatal: CDSCD_i = %e is negative.", CDSCD_i);
 		$finish(0);
 	end
-	if(CDSCB_i < 0) begin
-		$strobe("Fatal: CDSCB_i = %e is negative.", CDSCB_i);
-		$finish(0);
+	
+	if(ASYMMOD != 0) begin
+		if(CDSCDR_i < 0) begin
+			$strobe("Fatal: CDSCDR_i = %e is negative.", CDSCDR_i);
+			$finish(0);
+		end
 	end
 
 	//* initialize variables used in geometry macros
@@ -2445,7 +2718,6 @@ analog begin
 
 
 	//***** Temperature Dependent Calculations Begin Here *****//
-
 	if(TNOM <= -`P_CELSIUS0) begin
 		T0 = `REFTEMP - `P_CELSIUS0;
 		$strobe("Warning: TNOM = %e C <= %e C. Setting TNOM to %e C.", TNOM, -`P_CELSIUS0, T0);
@@ -2453,17 +2725,22 @@ analog begin
 	end else begin
 		Tnom = TNOM + `P_CELSIUS0;
 	end
-	
-// Self Heating
+
+DevTemp = $temperature + DTEMP;	
+/*  Calculate temperature dependent values for self-heating effect  */
+
 `ifdef __SHMOD__
-	if(SHMOD != 0 && RTH0 > 0) begin
-		DevTemp = $temperature + Temp(rth_branch)+ DTEMP;
-     	end else begin
-`endif
-	DevTemp = $temperature + DTEMP;
+    if ((SHMOD != 0) && (RTH0 > 0)) begin
+        delTemp1 = Temp(t);
+     	end else begin  
+`endif		
+        delTemp1 = 0;
 `ifdef __SHMOD__
 	end
-`endif
+`endif	
+
+    DevTemp = delTemp1 + DevTemp;
+
 	TK = DevTemp;
 	Vt = $vt(DevTemp);
 	inv_Vt 	= 1.0/Vt;
@@ -2477,8 +2754,26 @@ analog begin
 
 	T1 = (DevTemp / Tnom) * sqrt(DevTemp / Tnom);
 	ni = NI0SUB * T1 * lexp(Eg / (2.0 * Vtm0) - Eg / (2.0 * Vtm));
-	phib = ln(NDEP_i / ni);
-
+`ifdef __SHMOD__
+    if ((SHMOD != 0) && (RTH0 > 0)) begin
+        T0 = lln(NDEP_i/ni);
+        phib  =  sqrt(T0 * T0 + 1.0E-6);
+    end else begin
+        phib  =   lln(NDEP_i/ni);
+    end
+`else
+    phib  =   lln(NDEP_i/ni);
+`endif		
+`ifdef __SHMOD__
+    if ((SHMOD != 0) && (RTH0 > 0)) begin
+        T0 = lln(NDEP_i*NSD/ni*ni);
+        Vbi  =  sqrt(T0 * T0 + 1.0E-6);
+    end else begin
+        Vbi  =   lln(NDEP_i*NSD/ni*ni);
+    end
+`else
+    Vbi  =   lln(NDEP_i*NSD/ni*ni);
+`endif
 	if(NGATE_i > 0)
 	Vfbsdr = -devsign * Vt * lln(NGATE_i/NSD_i) + VFBSDOFF;
 		
@@ -2493,7 +2788,8 @@ analog begin
 
 	NFACTOR_t = NFACTOR_i * hypsmooth((1.0 + TNFACTOR * (TRatio - 1.0)),1e-3);
 	ETA0_t = ETA0_i * (1.0 + TETA0 * (TRatio - 1.0));
-
+	if(ASYMMOD != 0)
+		ETA0R_t = ETA0R_i * (1.0 + TETA0 * (TRatio - 1.0));
 	// Mobility Degradation
 	eta_mu = (TYPE != `ntype) ? (`Oneby3 * ETAMOB) : (0.5 * ETAMOB);
 
@@ -2502,6 +2798,13 @@ analog begin
 	UC_t = UC_i * hypsmooth(1.0 + UC1_i*delTemp - 1.0E-6, 1.0E-3);
 	UD_t = UD_i * pow(TRatio, UD1_i);
 	UCS_t = UCS_i * pow(TRatio, UCSTE_i);
+	if(ASYMMOD != 0) begin
+		U0R_t = U0R_i * pow(TRatio, UTE_i);
+		UAR_t = UAR_i * hypsmooth(1.0 + UA1_i*delTemp - 1.0E-6, 1.0E-3);
+		UCR_t = UCR_i * hypsmooth(1.0 + UC1_i*delTemp - 1.0E-6, 1.0E-3);
+		UDR_t = UDR_i * pow(TRatio, UD1_i);
+		UCSR_t = UCSR_i * pow(TRatio, UCSTE_i);
+	end
 
 	rdstemp = pow(TRatio, PRT_i);
 
@@ -2509,6 +2812,13 @@ analog begin
 	if(VSAT_t < 100.0) begin
 		$strobe("Warning: VSAT(%f) = %e is less than 100, setting it to 100.", DevTemp, VSAT_t);
 		VSAT_t = 100.0;
+	end
+	if(ASYMMOD != 0) begin
+		VSATR_t = VSATR_i * pow(TRatio, -AT_i);
+		if(VSATR_t < 100.0) begin
+			$strobe("Warning: VSATR(%f) = %e is less than 100, setting it to 100.", DevTemp, VSATR_t);
+			VSATR_t = 100.0;
+		end
 	end
 
 	VSATCV_t = VSATCV_i * pow(TRatio, -AT_i);
@@ -2519,6 +2829,12 @@ analog begin
 
 	DELTA_t = 1.0 / ( hypsmooth((1.0/DELTA_i) * (1.0 + TDELTA * delTemp)-2.0 , 1.0E-3) + 2.0);
 	PTWG_t = PTWG_i * hypsmooth(1.0 - PTWGT_i*delTemp - 1.0E-6, 1.0E-3);
+	if(ASYMMOD != 0)
+		PTWGR_t = PTWGR_i * hypsmooth(1.0 - PTWGT_i*delTemp - 1.0E-6, 1.0E-3);
+
+	A1_t = A1_i * hypsmooth(1.0 + A11_i*delTemp - 1.0E-6, 1.0E-3);	
+	A2_t = A2_i * hypsmooth(1.0 + A21_i*delTemp - 1.0E-6, 1.0E-3);
+
 	BETA0_t = BETA0_i * pow(TRatio, IIT_i);
 	BGIDL_t = BGIDL_i * hypsmooth(1.0 + TGIDL_i * delTemp - 1.0E-6, 1.0E-3);
 	BGISL_t = BGISL_i * hypsmooth(1.0 + TGIDL_i * delTemp - 1.0E-6, 1.0E-3);
@@ -2723,19 +3039,42 @@ analog begin
 	///End of Stress Effect
 
 	//Well Proximity Effect
-	vth0_well = KVTH0WE_i*(SCA + WEB*SCB + WEC*SCC);
-	k2_well = K2WE_i*(SCA + WEB*SCB + WEC*SCC);
-	mu_well = 1.0 + KU0WE_i*(SCA + WEB*SCB + WEC*SCC);
-
+    if (WPEMOD)   begin
+		Wdrn = W / NF;
+		local_sca = SCA;
+		local_scb = SCB;
+		local_scc = SCC;
+		if(!$param_given(SCA) && !$param_given(SCB) && !$param_given(SCC)) begin
+			if($param_given(SC) && SC > 0.0) begin
+				T1 = SC + Wdrn;
+				T2 = 1.0 / SCREF;
+				local_sca = SCREF * SCREF / (SC * T1);        
+				local_scb = ( (0.1 * SC + 0.01 * SCREF) * 
+							exp(-10.0 * SC * T2)  - (0.1 * T1 + 0.01 * SCREF) * 
+							exp(-10.0 * T1 * T2) ) / Wdrn;
+				local_scc = ( (0.05 * SC + 0.0025 * SCREF) * 
+							exp(-20.0 * SC * T2)  - (0.05 * T1 + 0.0025 * SCREF) * 
+							exp(-20.0 * T1 * T2) ) / Wdrn;
+			end
+			else
+				`STROBE("Warning: (Instance %M) No WPE as none of SCA, SCB, SCC, SC is given and/or SC not positive.");
+		end
+	
+	end
+	vth0_well = KVTH0WE_i*(local_sca + WEB*local_scb + WEC*local_scc);
+	k2_well = K2WE_i*(local_sca + WEB*local_scb + WEC*local_scc);
+	mu_well = 1.0 + KU0WE_i*(local_sca + WEB*local_scb + WEC*local_scc);
+	
 	U0_t = U0_t * mu_well;
 	K2_i = K2_i + k2_well;
 	// end of WPE
-
+	
 	// Load Terminal Voltages
 	Vg = devsign * V(`IntrinsicGate, `IntrinsicBody);
 	Vd = devsign * V(`IntrinsicDrain, `IntrinsicBody);
 	Vs = devsign * V(`IntrinsicSource, `IntrinsicBody);
 	Vds = Vd - Vs;
+	Vds_noswap = Vds;
 	Vsb_noswap = Vs;
 	Vdb_noswap = Vd;
 
@@ -2776,6 +3115,42 @@ analog begin
 
 	Vbsx = -(Vs + 0.5*(Vds-Vdsx));//Vbsx smoothing
 
+
+// Asymmetry Model
+	T0         =  tanh(0.6 * Vds_noswap / Vtm);
+	wf         =  0.5 + 0.5 * T0;
+	wr         =  1.0 - wf;
+
+	if(ASYMMOD != 0) begin
+		CDSCD_a    =  CDSCDR_i * wr + CDSCD_i * wf;
+		ETA0_a     =  ETA0R_t * wr + ETA0_t * wf;
+		PDIBLC_a   =  PDIBLCR_i * wr + PDIBLC_i * wf; 
+		PCLM_a     =  PCLMR_i * wr + PCLM_i * wf;	    
+		PSAT_a     =  PSATR_i * wr + PSAT_i * wf;	    
+		VSAT_a     =  VSATR_t * wr + VSAT_t * wf;	    
+		PTWG_a     =  PTWGR_t * wr + PTWG_t * wf;	    
+		U0_a       =  U0R_t * wr + U0_t * wf;	    
+		UA_a       =  UAR_t * wr + UA_t * wf;	    
+		UC_a       =  UCR_t * wr + UC_t * wf;	    
+		UD_a       =  UDR_t * wr + UD_t * wf;	    
+		UCS_a      =  UCSR_t * wr + UCS_t * wf;
+
+	end else begin
+		CDSCD_a    =  CDSCD_i;
+		ETA0_a     =  ETA0_i;
+		PDIBLC_a   =  PDIBLC_i; 
+		PCLM_a     =  PCLM_i;	    
+		PSAT_a     =  PSAT_i;	    
+		VSAT_a     =  VSAT_t;	    
+		PTWG_a     =  PTWG_t;	    
+		U0_a       =  U0_t;	    
+		UA_a       =  UA_t;	    
+		UC_a       =  UC_t;	    
+		UD_a       =  UD_t;	    
+		UCS_a      =  UCS_t;
+
+	end
+
 	// *** SCE, DIBL, SS degradation effects (Ref: BSIM4 Model)***
 
 	`Smooth(Phist - Vbsx, 0.05, 0.1, PhistVbs)
@@ -2783,17 +3158,17 @@ analog begin
 	sqrtPhistVbs = sqrt(PhistVbs);
 	Xdep 		= T1DEP * sqrtPhistVbs;
 	Cdep		= epssi / Xdep;
-	cdsc 		= CIT_i + NFACTOR_t + CDSCD_i * Vdsx - CDSCB_i * Vbsx;
+	cdsc 		= CIT_i + NFACTOR_t + CDSCD_a * Vdsx - CDSCB_i * Vbsx;
 	T1 			= 1.0 + cdsc/Cox;
 
-	`Smooth(T1, 1.0, 0.05, n) //Limiting n to 1.0
+	`Smooth(T1, 1, 0.05, n) //Limiting n to 1.0
 
 	nVt 	= n * Vt;
 	inv_nVt = 1.0/nVt;
 
-	dVth_dibl 	= -(ETA0_t + ETAB_i*Vbsx) * Vdsx;//Vth Shift for DIBL
+	dVth_dibl 	= -(ETA0_a + ETAB_i*Vbsx) * Vdsx;//Vth Shift for DIBL
 	dvth_temp = (KT1_i + KT1L / Leff + KT2_i*Vbsx) * (pow(TRatio,KT1EXP) - 1.0);//Vth shift with temperature
-
+	`Smooth2(dVth_dibl, 0.0, 5.0e-5, dVth_dibl)
 	/* Vth correction for Pocket implant*/
 	if (DVTP0_i > 0.0) begin
 		T0 = -DVTP1_i * Vdsx;
@@ -2810,14 +3185,24 @@ analog begin
 	dVth_ldop = dVth_ldop - T4 * tanh(DVTP4_i * Vdsx);
 
 	//Normalization of terminal and flatband voltage by nVt
-	vg 	= Vg * inv_nVt;
-	vs 	= Vs * inv_nVt;
+	VFB_i	= VFB_i + DELVT0;
+	vg 		= Vg * inv_nVt;
+	vs 		= Vs * inv_nVt;
 	vfb 	= VFB_i * inv_nVt;
 
-	dVth_VNUD	= - K2_i*Vbsx;
+	dVth_VNUD 	= K1_i*(sqrtPhistVbs - sqrtPhist) - K2_i*Vbsx;  //Compute dVth_VNUD with "first-order" and "second-order" body-bias effect
 	Vth_shift	= dVth_dibl + dVth_ldop + dVth_VNUD - dvth_temp + vth0_stress + vth0_well;
-	vgfb = vg - vfb - Vth_shift * inv_nVt;
+	vgfb 		= vg - vfb - Vth_shift * inv_nVt;
 
+
+//********************************************Threshold Voltage for Operating Point Information**************************************************************//
+	gam	= sqrt(2.0 * `q * epssi*NDEP_i * inv_Vt)/Cox;
+	q_vth	= 0.5;
+	T0 	= hypsmooth((2*phib+Vs*inv_Vt),1e-3);
+	nq	= 1.0+ gam/(2.0*sqrt(T0));
+	psip_th	= hypsmooth((Vs*inv_Vt+2*phib+ln(q_vth)+2*q_vth+ln(2*nq/gam * (2*q_vth*nq/gam + 2*sqrt(T0)))),1e-3);
+	VTH	= VFB_i+ (psip_th-Vs*inv_Vt)*Vt + Vt*gam*sqrt(psip_th)+ Vth_shift;
+//******************************************************************************************************************//
 
 	//Normalized body factor
 	gam = sqrt(2.0 * `q * epssi*NDEP_i * inv_nVt)/Cox;
@@ -2846,10 +3231,11 @@ analog begin
 	Eeffs = EeffFactor * (qbs + eta_mu * qis); // in the unit of MV/cm
 
 	// Ref: BSIM4 Model mobility model
-	T2 		= pow(0.5 * (1.0 + (qis / qbs)), UCS_t);
-	T3 		= (UA_t + UC_t*Vbsx) * pow(Eeffs, EU_i) + UD_t / T2;
-	Dmobs 	= 1.0 + T3;
-
+	T2 		= pow(0.5 * (1.0 + (qis / qbs)), UCS_a);
+	T3		= (UA_a + UC_a*Vbsx) * pow(Eeffs, EU_i) + UD_a / T2;
+	T4		= 1.0 + T3;	
+	`Smooth(T4, 1.0, 0.0015, Dmobs) //Limiting Dmobs to 1.0
+	
 	WeffWRFactor = 1.0 / (pow(Weff*1.0e6, WR_i) * NF);
 
 `ifdef __RDSMOD__
@@ -2869,17 +3255,17 @@ analog begin
 	end
 `endif
 
-	T0			= pow(Dmobs, 1.0/PSAT_i);
+	T0			= pow(Dmobs, 1.0/PSAT_a);
 	if (PSATB_i<0)
 		T1		= 1.0 / (1.0 + PSATB_i * Vbsx);
 	else
 		T1		= 1.0 - PSATB_i * Vbsx;				 
 
 	T2			= 10.0 *PSATX * qs * T1 / (10.0 *PSATX + qs * T1);
-	if (PTWG_t<0)
-		LambdaC = 2.0 * ((U0_t / T0) * nVt / (VSAT_t * Leff)) * (1.0/(1.0-PTWG_t*T2));
+	if (PTWG_a<0)
+		LambdaC = 2.0 * ((U0_a / T0) * nVt / (VSAT_a * Leff)) * (1.0/(1.0-PTWG_a*T2));
 	else
-		LambdaC = 2.0 * ((U0_t / T0) * nVt / (VSAT_t * Leff)) * (1.0 + PTWG_t*T2);
+		LambdaC = 2.0 * ((U0_a / T0) * nVt / (VSAT_a * Leff)) * (1.0 + PTWG_a*T2);
 
 	if (Rdss==0) begin// qdsat for external Rds
 		// Accurate qdsat derived from consistent I-V
@@ -2920,7 +3306,7 @@ analog begin
 
 	end else begin // qdsat for internal Rds -- Ref. : BSIM4 model
 		// Accurate qdsat derived from consistent I-V
-		T11 = Weff * 2.0 * nq * Cox * nVt * VSAT_t;
+		T11 = Weff * 2.0 * nq * Cox * nVt * VSAT_a;
 		T12 = T11 * LambdaC * Rdss / (2.0*nVt);
 		T0  = 0.5 * LambdaC * (qs*qs + qs) / (1.0 + 0.5 * LambdaC *(1.0 + qs));
 		T1  = 2.0 * LambdaC * (qs - T0);
@@ -2984,6 +3370,7 @@ analog begin
 	T3 = T1*T0;
 	Qs = T2*( 2.0*qs + qdeff + 0.5*(1.0+0.8*qs+1.2*qdeff)*T3);
 	Qd = T2*( qs + 2.0*qdeff + 0.5*(1.0+1.2*qs+0.8*qdeff)*T3);
+
 	//*********************************************************
 
 	// *** Mobility Degradation (Ref: BSIM4 Model)***
@@ -2992,12 +3379,13 @@ analog begin
 	qia = nVt*( Qs + Qd);
 
 	Eeffm 	= EeffFactor * (qba + eta_mu * qia); // in the unit of MV/cm
-	T2 		= pow(0.5 * (1.0 + (qia / qba)), UCS_t);
-	T3 		= (UA_t + UC_t * Vbsx) * pow(Eeffm, EU_i) + UD_t / T2;
-	Dmob 	= 1.0 + T3;
-
+	T2 		= pow(0.5 * (1.0 + (qia / qba)), UCS_a);
+	T3		=(UA_a + UC_a * Vbsx) * pow(Eeffm, EU_i) + UD_a / T2;
+	T4		= 1.0 + T3;	
+	`Smooth(T4, 1.0, 0.0015, Dmob) //Limiting Dmob to 1.0	
+	
 	// *** Output Conductance Modules ***
-	Esat 	= 2.0 * VSAT_t / (U0_t / Dmob);
+	Esat 	= 2.0 * VSAT_a / (U0_a / Dmob);
 	EsatL 	= Esat * Leff;
 	if(PVAG_i  > 0)
 		PVAGfactor = 1.0 + PVAG_i * qia / EsatL;
@@ -3005,7 +3393,7 @@ analog begin
 		PVAGfactor = 1.0 / (1.0 - PVAG_i * qia / EsatL);
 
 	// Output conductance due to DIBL - Ref: BSIM4 Model
-	DIBLfactor 	= PDIBLC_i;
+	DIBLfactor 	= PDIBLC_a;
 	diffVds 	= Vds - Vdseff;
 	Vgst2Vtm 	= qia + 2.0 * nVt;
 	if (DIBLfactor > 0) begin
@@ -3028,11 +3416,11 @@ analog begin
 
 	// Channel Length Modulation -- Ref BSIM4
 	Vasat = Vdssat + EsatL;
-	if(PCLM_i != 0) begin
+	if(PCLM_a != 0) begin
 		if(PCLMG < 0.0)
-			T1 = PCLM_i / (1.0 - PCLMG * qia / EsatL)/Fp;
+			T1 = PCLM_a / (1.0 - PCLMG * qia / EsatL)/Fp;
 		else
-			T1 = PCLM_i * (1.0 + PCLMG * qia / EsatL)/Fp;
+			T1 = PCLM_a * (1.0 + PCLMG * qia / EsatL)/Fp;
 		MdL = 1.0 + T1 * lln(1.0 + diffVds / T1 / Vasat);
 	end else
 		MdL = 1.0;
@@ -3065,17 +3453,17 @@ analog begin
 	Moc = Moc * Mscbe;
 
 	// *** Velocity Saturation ***
-	T0			= pow(Dmob, 1.0/PSAT_i);
+	T0			= pow(Dmob, 1.0/PSAT_a);
 	if (PSATB_i<0)
 		T1		= 1.0 / (1.0 + PSATB_i * Vbsx);
 	else
 		T1		= 1.0 - PSATB_i * Vbsx;
 
 	T2			= 10.0* PSATX * qia * T1 / (10.0 *PSATX + qia * T1);
-	if (PTWG_t<0)
-		LambdaC = 2.0 * ((U0_t / T0) * nVt / (VSAT_t * Leff)) * (1.0/(1.0- PTWG_t * T2));
+	if (PTWG_a<0)
+		LambdaC = 2.0 * ((U0_a / T0) * nVt / (VSAT_a * Leff)) * (1.0/(1.0- PTWG_a * T2));
 	else
-		LambdaC = 2.0 * ((U0_t / T0) * nVt / (VSAT_t * Leff)) * (1.0 + PTWG_t * T2);
+		LambdaC = 2.0 * ((U0_a / T0) * nVt / (VSAT_a * Leff)) * (1.0 + PTWG_a * T2);
 
 	T1			= 2.0 * LambdaC * (qs - qdeff);
 	T2			= sqrt(1.0 + T1 * T1);
@@ -3123,7 +3511,7 @@ analog begin
 		Rdsi = rdstemp * (RDSWMIN_i + RDSW_i * T3) * WeffWRFactor * NF ;
 		Rdrain = RDrainGeo;
 		Rsource = RSourceGeo;
-		Dr = 1.0 + U0_t /(Dvsat * Dmob) * Cox * Weff / Leff * qia * Rdsi;
+		Dr = 1.0 + U0_a /(Dvsat * Dmob) * Cox * Weff / Leff * qia * Rdsi;
 		
 `ifdef __RDSMOD__
 	if(RDSMOD == 2) begin
@@ -3131,21 +3519,34 @@ analog begin
 			Rdsi = rdstemp * (RSourceGeo + (RDSWMIN_i + RDSW_i * T3) * WeffWRFactor * NF + RDrainGeo ) ;
 			Rdrain = 0;
 			Rsource = 0;
-			Dr = 1.0 + U0_t /(Dvsat * Dmob) * Cox * Weff / Leff * qia * Rdsi;
+			Dr = 1.0 + U0_a /(Dvsat * Dmob) * Cox * Weff / Leff * qia * Rdsi;
 		end
 	end
 `endif
 
 
+// ************* Non-saturation effect *************
+
+		T0     =  A1_t + A2_t / (qia + 2.0 * n*Vtm);
+		DQSD   =  qs-qdeff;
+		T1     =  T0 * DQSD * DQSD;
+		T2     =  T1 + 1.0 - 0.001;
+		T3     =  -1.0 + 0.5 * (T2 + sqrt(T2*T2 + 0.004));   //max(T1,-1.0)
+		Nsat   =  0.5 * (1.0 + sqrt(1.0 + T3));
+
+
+// ************* Non-saturation effect Ends *************
+
+
 	Dtot 		= Dmob * Dvsat * Dr;
 
-	ueff = U0_t / Dtot; //Effective Mobility including mobility degradation
+	ueff = U0_a / Dtot; //Effective Mobility including mobility degradation
 
 	// ***************************************************
 	// I-V Equation
 	// ***************************************************
 
-	ids = 2.0 * NF * nq * ueff * Weff/Leff * Cox * nVt * nVt *((qs - qdeff)*(1.0 + qs + qdeff)) *Moc;
+	ids = 2.0 * NF * nq * ueff * Weff/Leff * Cox * nVt * nVt *((qs - qdeff)*(1.0 + qs + qdeff)) *Moc/Nsat;
 
 
 `ifdef __RGATEMOD__
@@ -3526,7 +3927,7 @@ analog begin
 		LINTNOI_i = LINTNOI;
 	end
 
-	Esatnoi = 2.0 * VSAT_t / ueff;
+	Esatnoi = 2.0 * VSAT_a / ueff;
 
 	if(NOIA > 0 || NOIB > 0 || NOIC > 0) begin
 		Leffnoi = Leff - 2.0 * LINTNOI_i;
@@ -3619,11 +4020,11 @@ analog begin
 		I(N2)   <+  white_noise(cm_igid, "corl");
 		I(NI)   <+  white_noise(sqig * sqig * (1.0 - cm_igid), "corl");
 		I(NI)   <+  -sqig * V(N2);
-		I(NC)   <+  ddt(mig * Cox * Weff * Leff * V(NC));
+		I(NC)   <+  ddt(mig * Cox * Weff * NF * Leff * V(NC));
 		I(`IntrinsicDrain,`IntrinsicSource)  <+  white_noise(sqid * sqid * (1.0 - cm_igid), "id");
 		I(`IntrinsicDrain,`IntrinsicSource)  <+  sqid * V(N2);
-		I(`IntrinsicGate,`IntrinsicSource)  <+  ddt(0.5 * ((1.0 + sigvds) * mig * Cox * Weff * Leff * V(NC)));
-		I(`IntrinsicGate,`IntrinsicDrain)  <+  ddt(0.5 * ((1.0 - sigvds) * mig * Cox * Weff * Leff * V(NC)));
+		I(`IntrinsicGate,`IntrinsicSource)  <+  ddt(0.5 * ((1.0 + sigvds) * mig * Cox * Weff * NF * Leff * V(NC)));
+		I(`IntrinsicGate,`IntrinsicDrain)  <+  ddt(0.5 * ((1.0 - sigvds) * mig * Cox * Weff * NF * Leff * V(NC)));
 	end
 	endcase
 
@@ -3650,6 +4051,7 @@ gamg2 		= (2.0 * `q * epssi*NGATE_i)/(Cox*Cox*Vt);
 invgamg2 	= (NGATE_i>0) ? (1.0/gamg2) : 0.0;
 
 if (CVMOD==1) begin
+	VFBCV_i	= VFBCV_i + DELVT0;
 	vg 	= Vg * inv_Vt;
 	vs 	= Vs * inv_Vt;
 	vfb 	= VFBCV_i * inv_Vt;
@@ -3681,10 +4083,12 @@ if (CVMOD==1) begin
 	Eeffs = EeffFactor * (qbs + eta_mu * qis); // in the unit of MV/cm
 
 	// Ref: BSIM4 Model mobility model
-	T3 		= (UA_t + UC_t * Vbsx) * pow(Eeffs, EU_i);
-	Dmobs 	= 1.0 + T3;
+	T3		=(UA_a + UC_a * Vbsx) * pow(Eeffs, EU_i);
+	T4		= 1.0 + T3;	
+	`Smooth(T4, 1.0, 0.0015, Dmobs) //Limiting Dmobs to 1.0	
 
-	LambdaC_by2 = (U0_t / Dmobs) * Vt / (VSATCV_t * Lact);
+
+	LambdaC_by2 = (U0_a / Dmobs) * Vt / (VSATCV_t * Lact);
 	qdsat 		= LambdaC_by2 * (qs*qs + qs) / (1.0 + LambdaC_by2 *(1.0 + qs));
 	vdsatcv 	= psip -2.0*phib - (2.0*qdsat + ln( (qdsat*2.0*nq*inv_gam)*((qdsat*2.0*nq*inv_gam) + (gam/(nq-1.0)) ) ));
 	VdsatCV 	= vdsatcv * Vt;
@@ -3718,16 +4122,17 @@ if (CVMOD==1) begin
 	qia = nq * Vt * (qs + qdeff);
 
 	Eeffm 	= EeffFactor * (qb + eta_mu * qia); // in the unit of MV/cm
-	T3 		= (UA_t + UC_t * Vbsx) * pow(Eeffm, EU_i);
-	Dmob 	= 1.0 + T3;
+	T3	= (UA_a + UC_a * Vbsx) * pow(Eeffm, EU_i);
+	T4		= 1.0 + T3;	
+	`Smooth(T4, 1.0, 0.0015, Dmob) //Limiting Dmob to 1.0	
 
-	LambdaC 	= 2.0 * (U0_t / Dmob) * Vt / (VSATCV_t * Lact);
+	LambdaC 	= 2.0 * (U0_a / Dmob) * Vt / (VSATCV_t * Lact);
 	dps 		= qs - qdeff;
-	T1			= 2.0 * (LambdaC * dps) * (LambdaC * dps);
+	T1		= 2.0 * (LambdaC * dps) * (LambdaC * dps);
 	zsat		= sqrt(1.0 + T1);
 	Dvsat 		= 0.5 * (1.0 + zsat);
 	// --- CLM for CV ---
-	Esat 	= 2.0 * VSATCV_t / (U0_t / Dmob);
+	Esat 	= 2.0 * VSATCV_t / (U0_a / Dmob);
 	EsatL 	= Esat * Lact;
 	Vasat = VdssatCV + EsatL;
 	diffVds 	= Vds - Vdseff;
@@ -3816,6 +4221,73 @@ end
 
 	Qovb	= - devsign * NF*Lact*CGBO* V(`GateEdgeNode, `IntrinsicBody);
 	Qovg	= - (Qovs + Qovd + Qovb);
+	//****************************************************
+	// Edge FET Model Implementation
+	//****************************************************
+	if (EDGEFET == 1) begin
+		NFACTOREDGE_t = NFACTOREDGE * hypsmooth((1.0 + TNFACTOREDGE * (TRatio - 1.0)),1e-3);
+		ETA0EDGE_t = ETA0EDGE * (1.0 + TETA0EDGE * (TRatio - 1.0));
+
+		cdsc = CITEDGE + NFACTOREDGE_t + CDSCDEDGE * Vdsx - CDSCBEDGE * Vbsx;
+		T1 = 1.0 + cdsc/Cox;
+			
+		`Smooth(T1, 1.0, 0.05, n) 
+		
+		nVt = n * Vt;
+		inv_nVt = 1.0/nVt;
+		vg 	= Vg * inv_nVt;
+		vs 	= Vs * inv_nVt;
+		vfb = VFB_i * inv_nVt;
+		
+		dvth_dibl 	= -(ETA0EDGE_t + ETABEDGE*Vbsx) * Vdsx;// DIBL for Edge Device
+		dvth_temp = (KT1EDGE + KT1LEDGE / Leff + KT2EDGE*Vbsx) * (pow(TRatio,KT1EXPEDGE) - 1.0);
+		litl_edge = litl*(1.0 + DVT2EDGE*Vbsx) ;
+		
+		theta_sce_edge = 0.5*DVT0EDGE/(cosh(DVT1EDGE*Leff/litl_edge) - 1.0) ;
+		dvth_sce = theta_sce_edge * (Vbi - Phist)  ;		
+
+		Vth_shift	= dvth_dibl  - dvth_temp + dvth_sce + DVTEDGE;
+		vgfb = vg - vfb - Vth_shift * inv_nVt;
+
+		//Normalized body factor
+		DGAMMAEDGE_i = DGAMMAEDGE*(1.0 + DGAMMAEDGEL*pow(Leff,-DGAMMAEDGELEXP)) ;
+		gam = sqrt(2.0 * `q * epssi*NDEP_i * inv_nVt)/Cox;
+		gam = gam*(1.0 + DGAMMAEDGE_i);
+		inv_gam = 1.0/gam;
+		phib_n 	= phib/n;
+		
+		`PO_psip(vgfb,gam,0,phib_n,psip)
+
+		`BSIM_q(psip,phib_n,vs,gam,qs) 
+
+		vdsatedge = 2.0*nVt*qs +  2.0*nVt;      // Approximate Pinch Off voltage
+
+        Vdsatedge =  vdsatedge;
+
+        Vdsatedge = Vdsatedge + Vs ; 
+
+	    `Smooth(Vdsatedge - Vs, 0.0, 1.0e-3, Vdssate) //Vdssat clamped to avoid negative values during transient simulation
+
+	    T7 	= pow(Vds/Vdssate , 1.0/DELTA_t);
+	    T8 	= pow(1.0+T7, -DELTA_t);
+	    Vdseff 	=  Vds*T8;
+	    vdeff 	= (Vdseff + Vs) * inv_nVt;
+
+		`BSIM_q(psip,phib_n,vdeff,gam,qdeff)
+	
+	///////////Nq calculation for Edge FET//////////
+		`Smooth(psip, 1.0, 2.0, psipclamp)
+		sqrtpsip = sqrt(psipclamp);
+	
+	    psiavg = psip - qs - qdeff -1.0;
+	    `Smooth(psiavg, 1.0, 2.0, T0)
+	    T2 = sqrt(T0);
+	    nq = 1.0 + gam/(sqrtpsip+T2);
+			
+		ids_edge = 2.0 * NF * nq * ueff * WEDGE/Leff * Cox * nVt * nVt *((qs - qdeff)*(1.0 + qs + qdeff)) *Moc;
+		ids = ids_edge + ids ;
+   	end
+	//Edge FET Parasitic Device Drain Current Model Ends ///
 
 	//Charge expressions including fringing and overlap cap
 	QB = devsign *(QBi + Qovb + Qbs + Qbd);
@@ -3932,7 +4404,7 @@ end
 	I(`GateEdgeNode, `IntrinsicBody)	<+ ddt(-devsign * Qovb);
 
 	//Drain to Source Current
-	I(`IntrinsicDrain, `IntrinsicSource)	<+ devsign * sigvds * ids + (GMIN * V(`IntrinsicDrain,`IntrinsicSource));
+	I(`IntrinsicDrain, `IntrinsicSource)	<+ devsign * sigvds * ids;
 
 	if(IGBMOD != 0)
 		I(`IntrinsicGate, `IntrinsicBody)	<+ IGB;
@@ -3988,15 +4460,15 @@ end
 	end
 `endif
 
-// Self Heating
 `ifdef __SHMOD__
 	if (SHMOD !=0 && RTH0 > 0) begin
-		Pwr(ith_branch) <+ -devsign * sigvds * ids * V(`IntrinsicDrain, `IntrinsicSource);
+		if (RDSMOD != 2) begin
+			Pwr(t) <+ -(devsign * sigvds * ids * V(`IntrinsicDrain, `IntrinsicSource) + V(d,`IntrinsicDrain) * V(d,`IntrinsicDrain) / Rdrain + V(s,`IntrinsicSource) * V(s,`IntrinsicSource) / Rsource) + ddt(delTemp1 * cth) + delTemp1 * gth;
+		end else begin
+			Pwr(t) <+ -(devsign * sigvds * ids * V(`IntrinsicDrain, `IntrinsicSource))  + ddt(delTemp1 * cth) + delTemp1 * gth;
+		end
 	end
-	Pwr(rth_branch) <+ Temp(rth_branch) * gth;
-	Pwr(rth_branch) <+ ddt(Temp(rth_branch) * cth);
 `endif
-
 
 `ifdef __RBODYMOD__
 	if(RBODYMOD != 0) begin
@@ -4035,5 +4507,4 @@ end
 `endif
 
 end
-
 endmodule
