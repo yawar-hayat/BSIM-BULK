@@ -1,4 +1,6 @@
-This repository contains standard versions of BSIM-BULK for the convenience of the general public. 
+BSIM-BULK is an industry standard compact model for the bulk MOSFET.
+<br>
+This repository aims to provide an organized and easily accessible collection of BSIM-BULK versions for users and researchers.
 <br>
 The University of California owns the copyright to the software.
 <br>
