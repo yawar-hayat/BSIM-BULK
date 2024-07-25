@@ -1,5 +1,5 @@
 // ****************************************************************************
-// *  BSIM-BULK 107.2.0 Beta0_1 released on 07/27/2023                        *
+// *  BSIM-BULK 107.2.0 Beta0_2 released on 10/17/2023                        *
 // *  BSIM Bulk MOSFET Model Equations (Verilog-A)                            *
 // ****************************************************************************
 
@@ -10,6 +10,7 @@
 // *                                                                          *
 // *  Current developers: Yawar Hayat Zarkob (Ph.D. student, IIT Kanpur)      *
 // *                      Ayushi Sharma (Ph.D. student, IIT Kanpur)           *
+// *                      Dinesh Rajasekharan (Postdoc, UC Berkeley)          *
 // *                      Chetan K. Dabhi (Postdoc, UC Berkeley)              *
 // *                      Girish Pahwa (Assistant Researcher, UC Berkeley)    *
 // *                      Prof. Yogesh Chauhan (IIT Kanpur)                   *
@@ -82,7 +83,6 @@
 `define BSIM_q(psip, phib, vch, gam, q) \
     T8 = 0.5 * (psip + 1.0 + sqrt((psip - 1.0) * (psip - 1.0) + 0.25 * 2.0 * 2.0)); \
     sqrtpsip = sqrt(T8); \
-    T9 = 1.0 + gam / (2.0 * sqrtpsip); \
     T0 = (1.0 + (gam / (2.0 * sqrtpsip))) / gam; \
     T1 = psip - 2.0 * phib - vch; \
     T2 = T1 - lln(4.0 * T0 * sqrtpsip); \
@@ -402,8 +402,10 @@
 
 // Effective PS, PD, AS, AD calculation, Ref: BSIM4
 `define BSIMBULKPAeffGeo(nf, geo, minSD,Weffcj, DMCG, DMCI, DMDG, Ps, Pd, As, Ad) \
-    begin if (geo < 9) \
-        `BSIMBULKNumFingerDiff(nf, minSD, nuIntD, nuEndD, nuIntS, nuEndS) \
+    begin \
+        if (geo < 9) begin \
+            `BSIMBULKNumFingerDiff(nf, minSD, nuIntD, nuEndD, nuIntS, nuEndS) \
+        end \
         T0 = DMCG + DMCI; \
         T1 = DMCG + DMCG; \
         T2 = DMDG + DMDG; \
@@ -803,9 +805,9 @@ endfunction
 `MPRnb( WDVTP1            ,0                                        ,"m/V"                                   ,"Width dependence of DVTP1" )
 `MPRnb( PDVTP1            ,0                                        ,"m^2/V"                                 ,"Area dependence of DVTP1" )
 `MPRnb( DVTP2             ,0.0                                      ,"m*V"                                   ,"DITS" )
-`MPRnb( LDVTP2            ,0                                        ,"m^2/V"                                 ,"Length dependence of DVTP2" )
-`MPRnb( WDVTP2            ,0                                        ,"m^2/V"                                 ,"Width dependence of DVTP2" )
-`MPRnb( PDVTP2            ,0                                        ,"m^3/V"                                 ,"Area dependence of DVTP2" )
+`MPRnb( LDVTP2            ,0                                        ,"m^2*V"                                 ,"Length dependence of DVTP2" )
+`MPRnb( WDVTP2            ,0                                        ,"m^2*V"                                 ,"Width dependence of DVTP2" )
+`MPRnb( PDVTP2            ,0                                        ,"m^3*V"                                 ,"Area dependence of DVTP2" )
 `MPRnb( DVTP3             ,0.0                                      ,""                                      ,"DITS" )
 `MPRnb( LDVTP3            ,0                                        ,"m"                                     ,"Length dependence of DVTP3" )
 `MPRnb( WDVTP3            ,0                                        ,"m"                                     ,"Width dependence of DVTP3" )
@@ -853,9 +855,9 @@ endfunction
 `MPRoz( K2WEXP            ,1.0                                      ,""                                      ,"Width dependence exponent coefficient of K2" )
 `MPRnb( K2WL              ,0.0                                      ,"m^(2*K2WLEXP)"                         ,"Width-length dependence coefficient of K2" )
 `MPRoz( K2WLEXP           ,1.0                                      ,""                                      ,"Width-length dependence exponent coefficient of K2" )
-`MPRnb( LK2               ,0.0                                      ,"m"                                     ,"Length dependence of K2" )
-`MPRnb( WK2               ,0.0                                      ,"m"                                     ,"Width dependence of K2" )
-`MPRnb( PK2               ,0.0                                      ,"m^2"                                   ,"Area dependence of K2" )
+`MPRnb( LK2               ,0.0                                      ,"V*m"                                   ,"Length dependence of K2" )
+`MPRnb( WK2               ,0.0                                      ,"V*m"                                   ,"Width dependence of K2" )
+`MPRnb( PK2               ,0.0                                      ,"V*m^2"                                 ,"Area dependence of K2" )
 
 // Quantum mechanical effects
 `MPRcz( ADOS              ,0.0                                      ,""                                      ,"Quantum mechanical effect pre-factor switch in inversion" )
@@ -1053,35 +1055,35 @@ endfunction
 `MPRnb( WWR               ,0.0                                      ,"m"                                     ,"Width dependence of WR" )
 `MPRnb( PWR               ,0.0                                      ,"m^2"                                   ,"Area dependence of WR" )
 `MPRnb( RSWMIN            ,0.0                                      ,"ohm*um^WR"                             ,"Source resistance per unit width at high Vgs (RDSMOD = 1)" )
-`MPRnb( LRSWMIN           ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Length dependence of RSWMIN" )
-`MPRnb( WRSWMIN           ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Width dependence of RSWMIN" )
-`MPRnb( PRSWMIN           ,0.0                                      ,"ohm*um^(3*WR)"                         ,"Area dependence of RSWMIN" )
+`MPRnb( LRSWMIN           ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Length dependence of RSWMIN" )
+`MPRnb( WRSWMIN           ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Width dependence of RSWMIN" )
+`MPRnb( PRSWMIN           ,0.0                                      ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RSWMIN" )
 `MPRnb( RSW               ,10.0                                     ,"ohm*um^WR"                             ,"Zero bias source resistance (RDSMOD = 1)" )
-`MPRnb( LRSW              ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Length dependence of RSW" )
-`MPRnb( WRSW              ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Width dependence of RSW" )
-`MPRnb( PRSW              ,0.0                                      ,"ohm*um^(3*WR)"                         ,"Area dependence of RSW" )
+`MPRnb( LRSW              ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Length dependence of RSW" )
+`MPRnb( WRSW              ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Width dependence of RSW" )
+`MPRnb( PRSW              ,0.0                                      ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RSW" )
 `MPRnb( RSWL              ,0.0                                      ,"m^RSWLEXP"                             ,"Geometrical scaling of RSW (RDSMOD = 1)" )
 `MPRoz( RSWLEXP           ,1.0                                      ,""                                      ,"Geometrical scaling of RSW (RDSMOD = 1)" )
 `MPRnb( RDWMIN            ,RSWMIN                                   ,"ohm*um^WR"                             ,"Drain resistance per unit width at high Vgs (RDSMOD = 1)" )
-`MPRnb( LRDWMIN           ,LRSWMIN                                  ,"ohm*um^(2*WR)"                         ,"Length dependence of RDWMIN" )
-`MPRnb( WRDWMIN           ,WRSWMIN                                  ,"ohm*um^(2*WR)"                         ,"Width dependence of RDWMIN" )
-`MPRnb( PRDWMIN           ,PRSWMIN                                  ,"ohm*um^(3*WR)"                         ,"Area dependence of RDWMIN" )
+`MPRnb( LRDWMIN           ,LRSWMIN                                  ,"ohm*um^(WR)*m"                         ,"Length dependence of RDWMIN" )
+`MPRnb( WRDWMIN           ,WRSWMIN                                  ,"ohm*um^(WR)*m"                         ,"Width dependence of RDWMIN" )
+`MPRnb( PRDWMIN           ,PRSWMIN                                  ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RDWMIN" )
 `MPRnb( RDW               ,RSW                                      ,"ohm*um^WR"                             ,"Zero bias drain resistance (RDSMOD = 1)" )
-`MPRnb( LRDW              ,LRSW                                     ,"ohm*um^(2*WR)"                         ,"Length dependence of RDW" )
-`MPRnb( WRDW              ,WRSW                                     ,"ohm*um^(2*WR)"                         ,"Width dependence of RDW" )
-`MPRnb( PRDW              ,PRSW                                     ,"ohm*um^(3*WR)"                         ,"Area dependence of RDW" )
+`MPRnb( LRDW              ,LRSW                                     ,"ohm*um^(WR)*m"                         ,"Length dependence of RDW" )
+`MPRnb( WRDW              ,WRSW                                     ,"ohm*um^(WR)*m"                         ,"Width dependence of RDW" )
+`MPRnb( PRDW              ,PRSW                                     ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RDW" )
 `MPRnb( RDWL              ,RSWL                                     ,"m^RDWLEXP"                             ,"Geometrical scaling of RDW (RDSMOD = 1)" )
 `MPRoz( RDWLEXP           ,RSWLEXP                                  ,""                                      ,"Geometrical scaling of RDW (RDSMOD = 1)" )
 `MPRnb( RDSWMIN           ,0.0                                      ,"ohm*um^WR"                             ,"S/D Resistance per unit width at high Vgs (RDSMOD = 0 and RDSMOD = 2)" )
-`MPRnb( LRDSWMIN          ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Length dependence of RDSWMIN" )
-`MPRnb( WRDSWMIN          ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Width dependence of RDSWMIN" )
-`MPRnb( PRDSWMIN          ,0.0                                      ,"ohm*um^(3*WR)"                         ,"Area dependence of RDSWMIN" )
+`MPRnb( LRDSWMIN          ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Length dependence of RDSWMIN" )
+`MPRnb( WRDSWMIN          ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Width dependence of RDSWMIN" )
+`MPRnb( PRDSWMIN          ,0.0                                      ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RDSWMIN" )
 `MPRnb( RDSW              ,20.0                                     ,"ohm*um^WR"                             ,"Zero bias resistance (RDSMOD = 0 and RDSMOD = 2)" )
 `MPRnb( RDSWL             ,0.0                                      ,"m^RDSWLEXP"                            ,"Geometrical scaling of RDSW (RDSMOD = 0 and RDSMOD = 2)" )
 `MPRoz( RDSWLEXP          ,1.0                                      ,""                                      ,"Geometrical scaling of RDSW (RDSMOD = 0 and RDSMOD = 2)" )
-`MPRnb( LRDSW             ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Length dependence of RDSW" )
-`MPRnb( WRDSW             ,0.0                                      ,"ohm*um^(2*WR)"                         ,"Width dependence of RDSW" )
-`MPRnb( PRDSW             ,0.0                                      ,"ohm*um^(3*WR)"                         ,"Area dependence of RDSW" )
+`MPRnb( LRDSW             ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Length dependence of RDSW" )
+`MPRnb( WRDSW             ,0.0                                      ,"ohm*um^(WR)*m"                         ,"Width dependence of RDSW" )
+`MPRnb( PRDSW             ,0.0                                      ,"ohm*um^(WR)*m^2"                       ,"Area dependence of RDSW" )
 
 // Velocity saturation
 `MPRnb( PSAT              ,1.0                                      ,""                                      ,"Gmsat variation with gate bias" )
@@ -1150,9 +1152,9 @@ endfunction
 `MPRnb( FPROUT            ,0.0                                      ,"V/m^0.5"                               ,"Gds degradation factor due to pocket implants" )
 `MPRnb( FPROUTL           ,0.0                                      ,"m^FPROUTLEXP"                          ,"Length dependence coefficient of FPROUT" )
 `MPRoz( FPROUTLEXP        ,1.0                                      ,""                                      ,"Length dependence exponent coefficient of FPROUT" )
-`MPRnb( LFPROUT           ,0.0                                      ,"V*m^0.5"                               ,"Length dependence of FPROUT" )
-`MPRnb( WFPROUT           ,0.0                                      ,"V*m^0.5"                               ,"Width dependence of FPROUT" )
-`MPRnb( PFPROUT           ,0.0                                      ,"V*m^1.5"                               ,"Area dependence of FPROUT" )
+`MPRnb( LFPROUT           ,0.0                                      ,"(V/m^0.5)*m"                               ,"Length dependence of FPROUT" )
+`MPRnb( WFPROUT           ,0.0                                      ,"(V/m^0.5)*m"                               ,"Width dependence of FPROUT" )
+`MPRnb( PFPROUT           ,0.0                                      ,"(V/m^0.5)*m^2"                               ,"Area dependence of FPROUT" )
 
 // Impact ionization current
 `MPRnb( ALPHA0            ,0.0                                      ,"m/V"                                   ,"First parameter of Iii" )
@@ -1294,9 +1296,9 @@ endfunction
 `MPRnb( AGIDL             ,0.0                                      ,"V/m"                                   ,"Pre-exponential coefficient for GIDL" )
 `MPRnb( AGIDLL            ,0.0                                      ,"m"                                     ,"Length dependence coefficient of AGIDL" )
 `MPRnb( AGIDLW            ,0.0                                      ,"m"                                     ,"Width dependence coefficient of AGIDL" )
-`MPRnb( LAGIDL            ,0.0                                      ,"m^2"                                   ,"Length dependence of AGIDL" )
-`MPRnb( WAGIDL            ,0.0                                      ,"m^2"                                   ,"Width dependence of AGIDL" )
-`MPRnb( PAGIDL            ,0.0                                      ,"m^3"                                   ,"Area dependence of AGIDL" )
+`MPRnb( LAGIDL            ,0.0                                      ,"V"                                     ,"Length dependence of AGIDL" )
+`MPRnb( WAGIDL            ,0.0                                      ,"V"                                     ,"Width dependence of AGIDL" )
+`MPRnb( PAGIDL            ,0.0                                      ,"V*m"                                   ,"Area dependence of AGIDL" )
 `MPRnb( BGIDL             ,2.3e9                                    ,"V/m"                                   ,"Exponential coefficient for GIDL" )
 `MPRnb( LBGIDL            ,0.0                                      ,"V"                                     ,"Length dependence of BGIDL" )
 `MPRnb( WBGIDL            ,0.0                                      ,"V"                                     ,"Width dependence of BGIDL" )
@@ -1312,9 +1314,9 @@ endfunction
 `MPRnb( AGISL             ,AGIDL                                    ,"V/m"                                   ,"Pre-exponential coefficient for GISL" )
 `MPRnb( AGISLL            ,AGIDLL                                   ,"m"                                     ,"Length dependence coefficient of AGISL" )
 `MPRnb( AGISLW            ,AGIDLW                                   ,"m"                                     ,"Width dependence coefficient of AGISL" )
-`MPRnb( LAGISL            ,LAGIDL                                   ,"m^2"                                   ,"Length dependence of AGISL" )
-`MPRnb( WAGISL            ,WAGIDL                                   ,"m^2"                                   ,"Width dependence of AGISL" )
-`MPRnb( PAGISL            ,PAGIDL                                   ,"m^3"                                   ,"Area dependence of AGISL" )
+`MPRnb( LAGISL            ,LAGIDL                                   ,"V"                                     ,"Length dependence of AGISL" )
+`MPRnb( WAGISL            ,WAGIDL                                   ,"V"                                     ,"Width dependence of AGISL" )
+`MPRnb( PAGISL            ,PAGIDL                                   ,"V*m"                                   ,"Area dependence of AGISL" )
 `MPRnb( BGISL             ,BGIDL                                    ,"V/m"                                   ,"Exponential coefficient for GISL" )
 `MPRnb( LBGISL            ,LBGIDL                                   ,"V"                                     ,"Length dependence of BGISL" )
 `MPRnb( WBGISL            ,WBGIDL                                   ,"V"                                     ,"Width dependence of BGISL" )
@@ -1338,9 +1340,9 @@ endfunction
 `MPRnb( CGDO              ,0.0                                      ,"F/m"                                   ,"Gate-to-drain overlap capacitance" )
 `MPRnb( CGBO              ,0.0                                      ,"F/m"                                   ,"Gate-to-body overlap capacitance" )
 `MPRnb( CGSL              ,0.0                                      ,"F/m"                                   ,"Overlap capacitance between gate and lightly-doped source region" )
-`MPRnb( LCGSL             ,0.0                                      ,""                                      ,"Length dependence of CGSL" )
-`MPRnb( WCGSL             ,0.0                                      ,""                                      ,"Width dependence of CGSL" )
-`MPRnb( PCGSL             ,0.0                                      ,""                                      ,"Area dependence of CGSL" )
+`MPRnb( LCGSL             ,0.0                                      ,"F"                                     ,"Length dependence of CGSL" )
+`MPRnb( WCGSL             ,0.0                                      ,"F"                                     ,"Width dependence of CGSL" )
+`MPRnb( PCGSL             ,0.0                                      ,"F*m"                                   ,"Area dependence of CGSL" )
 `MPRnb( CGDL              ,0.0                                      ,"F/m"                                   ,"Overlap capacitance between gate and lightly-doped drain region" )
 `MPRnb( LCGDL             ,0.0                                      ,"F"                                     ,"Length dependence of CGDL" )
 `MPRnb( WCGDL             ,0.0                                      ,"F"                                     ,"Width dependence of CGDL" )
@@ -1461,6 +1463,19 @@ endfunction
 `MPRoc( EF                ,1.0                                      ,""            ,0.0         ,2.0         ,"Flicker noise frequency exponent" )
 `MPRnb( EM                ,4.1e7                                    ,"V/m"                                   ,"Saturation field" )
 `MPRnb( NOIA              ,6.250e40                                 ,"s^(1-EF)/(eV)^1/m^3"                   ,"Flicker noise parameter A" )
+`MPRnb( NOIA3             ,0                                        ,"s^(1-EF)/(eV)^1/m^3"                   ,"Flicker noise parameter for extra tuning flexibility in sub-threshold region" )
+`MPRnb( LNOIA3            ,0.0                                      ,"s^(1-EF)/(eV)^1/m^2"                   ,"Length dependence of NOIA3" )
+`MPRnb( WNOIA3            ,0.0                                      ,"s^(1-EF)/(eV)^1/m^2"                   ,"Width dependence of NOIA3" )
+`MPRnb( PNOIA3            ,0.0                                      ,"s^(1-EF)/(eV)^1/m"                     ,"Area dependence of NOIA3" )
+`MPRoz( MPOWER            ,1.2                                      ,""                                      ,"Sub-threshold to strong inversion transition slope Parameter" )
+`MPRnb( LMPOWER           ,0.0                                      ,"m"                                     ,"Length dependence of MPOWER" )
+`MPRnb( WMPOWER           ,0.0                                      ,"m"                                     ,"Width dependence of MPOWER" )
+`MPRnb( PMPOWER           ,0.0                                      ,"m^2"                                   ,"Area dependence of MPOWER" )
+`MPRoz( QSREF             ,50m                                      ,"C*m^-2"                                ,"Charge at threshold condition" )
+`MPRnb( LQSREF            ,0.0                                      ,"C*m^-1"                                ,"Length dependence of QSREF" )
+`MPRnb( WQSREF            ,0.0                                      ,"C*m^-1"                                ,"Width dependence of QSREF" )
+`MPRnb( PQSREF            ,0.0                                      ,"C"                                     ,"Area dependence of QSREF" )
+`MPRcz( SPFN              ,2                                        ,""                                      ,"Smoothing Parameter for FN model" )
 `MPRnb( NOIB              ,3.125e25                                 ,"s^(1-EF)/(eV)^1/m"                     ,"Flicker noise parameter B" )
 `MPRnb( NOIC              ,8.750e8                                  ,"s^(1-EF)*m/(eV)^1"                     ,"Flicker noise parameter C" )
 `MPRnb( LINTNOI           ,0.0                                      ,"m"                                     ,"Length reduction parameter offset" )
@@ -1698,21 +1713,21 @@ endfunction
 `MPRnb( DVT1EDGE          ,0.53                                     ,""                                      ,"Second coefficient of SCE effect on Vth for Edge FET" )
 `MPRnb( DVT2EDGE          ,0.0                                      ,"1/V"                                   ,"Body-bias coefficient for SCE effect for Edge FET" )
 `MPRnb( K2EDGE            ,0.0                                      ,"V"                                     ,"Vth shift due to Vertical Non-uniform doping" )
-`MPRnb( LK2EDGE           ,0.0                                      ,"m"                                     ,"Length dependence of K2EDGE" )
-`MPRnb( WK2EDGE           ,0.0                                      ,"m"                                     ,"Width dependence of K2EDGE" )
-`MPRnb( PK2EDGE           ,0.0                                      ,"m^2"                                   ,"Area dependence of K2EDGE" )
+`MPRnb( LK2EDGE           ,0.0                                      ,"V*m"                                   ,"Length dependence of K2EDGE" )
+`MPRnb( WK2EDGE           ,0.0                                      ,"V*m"                                   ,"Width dependence of K2EDGE" )
+`MPRnb( PK2EDGE           ,0.0                                      ,"V*m^2"                                 ,"Area dependence of K2EDGE" )
 `MPRnb( KVTH0EDGE         ,0.0                                      ,"V*m"                                   ,"Threshold Shift parameter for stress effect" )
-`MPRnb( LKVTH0EDGE        ,0.0                                      ,"m^LLODKU0"                             ,"Length dependence of KVTH0EDGE" )
-`MPRnb( WKVTH0EDGE        ,0.0                                      ,"m^WLODKU0"                             ,"Width dependence of KVTH0EDGE" )
-`MPRnb( PKVTH0EDGE        ,0.0                                      ,"m^(LLODKU0+WLODKU0)"                   ,"Area dependence of KVTH0EDGE" )
+`MPRnb( LKVTH0EDGE        ,0.0                                      ,"V*m^2"                                 ,"Length dependence of KVTH0EDGE" )
+`MPRnb( WKVTH0EDGE        ,0.0                                      ,"V*m^2"                                 ,"Width dependence of KVTH0EDGE" )
+`MPRnb( PKVTH0EDGE        ,0.0                                      ,"V*m^3"                                 ,"Area dependence of KVTH0EDGE" )
 `MPRnb( KVTH0EDGEWE       ,0.0                                      ,""                                      ,"Threshold Shift parameter due to Well proximity in EDGEFET" )
-`MPRnb( LKVTH0EDGEWE      ,0.0                                      ,""                                      ,"Length dependence of KVTHOWEEDGE" )
-`MPRnb( WKVTH0EDGEWE      ,0.0                                      ,""                                      ,"Width dependence of KVTHOWEEDGE" )
-`MPRnb( PKVTH0EDGEWE      ,0.0                                      ,""                                      ,"Area dependence of KVTHOWEEDGE" )
+`MPRnb( LKVTH0EDGEWE      ,0.0                                      ,"m"                                     ,"Length dependence of KVTHOWEEDGE" )
+`MPRnb( WKVTH0EDGEWE      ,0.0                                      ,"m"                                     ,"Width dependence of KVTHOWEEDGE" )
+`MPRnb( PKVTH0EDGEWE      ,0.0                                      ,"m^2"                                   ,"Area dependence of KVTHOWEEDGE" )
 `MPRnb( K2EDGEWE          ,0.0                                      ,""                                      ,"Vth shift due to Vertical Non-uniform doping due to Well proximity in EDGEFET" )
-`MPRnb( LK2EDGEWE         ,0.0                                      ,""                                      ,"Length dependence of K2WEEDGE" )
-`MPRnb( WK2EDGEWE         ,0.0                                      ,""                                      ,"Width dependence of K2WEEDGE" )
-`MPRnb( PK2EDGEWE         ,0.0                                      ,""                                      ,"Area dependence of K2WEEDGE" )
+`MPRnb( LK2EDGEWE         ,0.0                                      ,"m"                                     ,"Length dependence of K2WEEDGE" )
+`MPRnb( WK2EDGEWE         ,0.0                                      ,"m"                                     ,"Width dependence of K2WEEDGE" )
+`MPRnb( PK2EDGEWE         ,0.0                                      ,"m^2"                                   ,"Area dependence of K2WEEDGE" )
 `MPRnb( STK2EDGE          ,0.0                                      ,"m"                                     ,"K2 shift factor related to Vth change" )
 `MPRnb( LSTK2EDGE         ,0.0                                      ,"m^2"                                   ,"Length dependence of STK2EDGE" )
 `MPRnb( WSTK2EDGE         ,0.0                                      ,"m^2"                                   ,"Width dependence of STK2EDGE" )
@@ -1800,6 +1815,7 @@ endfunction
 `MPRoo( MDRIFT         ,1.0             ,""             ,0           ,4          ,"Non-linear resistance parameter" )
 `MPRoz( NDRIFTS        ,NDRIFTD         ,"per m^2"                               ,"Charge density in the source side drift region" )
 `MPRco( RDLCW          ,100.0           ,"Ohm*um^WR"    ,0           ,inf        ,"'R'esistance of the 'D'rain side drift region at 'L'ow 'C'urrent" )
+`MPRco( RDLCWCV        ,RDLCW           ,"Ohm*um^WR"    ,0           ,inf        ,"'R'esistance of the 'D'rain side drift region at 'L'ow 'C'urrent for capacitance fitting" )
 `MPRco( RSLCW          ,0               ,"Ohm*um^WR"    ,0           ,inf        ,"'R'esistance of the 'S'ource side drift region at 'L'ow 'C'urrent" )
 `MPRnb( PDRWB          ,0               ,""                                      ,"Body bias dependence of the drift region resistance" )
 `MPRnb( VFBOV          ,-1              ,"V"                                     ,"Flat-band voltage of the overlap region" )
@@ -1837,8 +1853,8 @@ real Tb;
 real epssi, epsox, ni, Weff, Leff, Weff1, Leff1, Wact, Lact, Weffcj, Eg, Eg0, Weff_SH;
 real dLIV, dWIV, dLB, dWB, dLCV, dWCV, dWJ, Cox, epsratio;
 real Vdb_noswap, Vdb1_noswap, Vsb_noswap, Vsb1_noswap, Vgs_noswap, Vgs1_noswap, Vgd_noswap, Vgd1_noswap, Vds_noswap;
-real sigvds, vfb, vgfb, vgfbCV, Vbsx, Vfbsdr;
-real Vg, vg, Vd, Vd1, Vs, Vs1, vs, Vds, Vdsx, Vgs_eff, Vgd_eff;
+real sigvds, vfb, vgfb, vgfbCV, Vbsx, Vbsxcv, Vfbsdr;
+real Vg, vg, Vd, Vd1, Vdcv, Vdcv_noswap, Vs, Vs1, Vscv, vs, Vds, Vdscv, Vdsx, Vgs_eff, Vgd_eff;
 real Vth_shift;
 real qia, qba, qiaCV, qbaCV, qbs, qbd, qb, dps, phib, phib_n;
 real nq, psip, psiavg, psipclamp, sqrtpsisa, sqrtpsisainv, sqrtpsip;
@@ -1885,7 +1901,7 @@ real MdL_2, inv_MdL, inv_MdL_2, MdL_less_1;
 real sis, sid, vgpqm, Temps, Tempd, DQSD, DQSD2, invgamg2;
 real Vgsov, Vgdov, Qovb, Qovg, Qovs, Qovd, Cgsof, Cgdof;
 real XDCinv, Coxeffinv, BSIMBULKTOXP;
-real Vgd_ov_noswap, Vgs_ov_noswap;
+real Vgd_ov_noswap, Vgs_ov_noswap, Vgd_ov_noswapcv;
 real phibCV, gamCV;
 
 // S/D series resistances
@@ -1913,7 +1929,7 @@ real Aechvb, Bechvb, AechvbEdge, BechvbEdge, ToxRatio, ToxRatioEdge;
 
 // Junction currents and capacitances
 real PSeff, PDeff, OneMinusXpart;
-real Ibs, Ibd, Ibd_ext, Vbs_jct, Vbd_jct, Vbd_ext, arg, sarg;
+real Ibs, Ibd, Ibd_ext, Vbs_jct, Vbd_jct, Vbd_jctcv, Vbd_ext, arg, sarg;
 real Czbs, czbs_p1, czbs_p2, Czbssw, czbssw_p1, czbssw_p2, Czbsswg, czbsswg_p1, czbsswg_p2;
 real Czbd, czbd_p1, czbd_p2, Czbdsw, czbdsw_p1, czbdsw_p2, Czbdswg, czbdswg_p1, czbdswg_p2;
 real Qbsj, Qbsj1, Qbsj2, Qbsj3;
@@ -1926,7 +1942,7 @@ real DslpRev, IVjdmRev, VjdmRev, DslpFwd, IVjdmFwd, VjdmFwd, XExpBVD;
 // Flicker noise
 real LINTNOI_i;
 real Esatnoi, Leffnoi, Leffnoisq, DelClm;
-real N0, Nl, Nstar, Ssi, Swi, FNPowerAt1Hz;
+real NOIAeff, N0, Nl, Nstar, Ssi, Swi, FNPowerAt1Hz;
 
 // Thermal noise
 real gspr, gdpr, gdrift_s, gdrift_d;
@@ -1990,6 +2006,7 @@ real K2EDGEWE_i, KVTH0EDGEWE_i;
 real C0_i, C01_i, C0_t;
 real C0SI_i, C0SI1_i, C0SI_t;
 real C0SISAT_i, C0SISAT1_i, C0SISAT_t;
+real NOIA3_i, QSREF_i, MPOWER_i;
 
 // Stress effects
 real W_tmp_stress, tmp1_stress, kstress_u0, tmp1_stress_vth, kstress_vth0, ku0_temp;
@@ -2142,7 +2159,6 @@ analog begin
     UAR_t            = 0.0;
     UCSR_t           = 0.0;
     VSATR_i          = 0.0;
-    local_sca        = 0.0;
     Inv_sb           = 0.0;
     FNPowerAtedge    = 0.0;
     local_scb        = 0.0;
@@ -2161,7 +2177,6 @@ analog begin
     UCR_i            = 0.0;
     UDR_i            = 0.0;
     VSATR_t          = 0.0;
-    local_scb        = 0.0;
     vth0_stress_EDGE = 0.0;
     eta_stress_EDGE  = 0.0;
     local_scc        = 0.0;
@@ -2180,7 +2195,6 @@ analog begin
     UCR_t            = 0.0;
     UDR_t            = 0.0;
     W_LWN1           = 0.0;
-    local_scc        = 0.0;
     k2_stress_EDGE   = 0.0;
     K0_i             = 0.0;
     K0_t             = 0.0;
@@ -2478,6 +2492,9 @@ analog begin
     C0SI1_i        = C0SI1 + BIN_L * LC0SI1 + BIN_W * WC0SI1 + BIN_WL * PC0SI1;
     C0SISAT_i      = C0SISAT + BIN_L * LC0SISAT + BIN_W * WC0SISAT + BIN_WL * PC0SISAT;
     C0SISAT1_i     = C0SISAT1 + BIN_L * LC0SISAT1 + BIN_W * WC0SISAT1 + BIN_WL * PC0SISAT1;
+    NOIA3_i        = NOIA3 + BIN_L * LNOIA3 + BIN_W * WNOIA3 + BIN_WL * PNOIA3;
+    QSREF_i        = QSREF + BIN_L * LQSREF + BIN_W * WQSREF + BIN_WL * PQSREF;
+    MPOWER_i       = MPOWER + BIN_L * LMPOWER + BIN_W * WMPOWER + BIN_WL * PMPOWER;
 
     if (ASYMMOD != 0) begin
         CDSCDR_i  = CDSCDR + BIN_L * LCDSCDR + BIN_W * WCDSCDR + BIN_WL * PCDSCDR;
@@ -2737,6 +2754,21 @@ analog begin
     if (UCS_i < 0.0) begin
         $strobe("Warning: UCS_i = %e is negative, setting it to 0.", UCS_i);
         UCS_i = 0.0;
+    end
+    if (FNOIMOD == 1) begin
+        LH1 = LH;
+        if (Leff > LH1) begin
+            T0 = (Leff - LH1);
+        end else begin
+            LH1 = Leff;
+            T0 = LH1;
+        end
+        if (LINTNOI >= T0 / 2.0) begin
+            $strobe("Warning: LINTNOI = %e is too large - Leff for noise is negative. Re-setting LINTNOI = 0.", LINTNOI);
+            LINTNOI_i = 0.0;
+        end else begin
+            LINTNOI_i = LINTNOI;
+        end
     end
 
     // Initialize variables used in geometry macros
@@ -3016,7 +3048,6 @@ analog begin
     rdstemp = pow(TRatio, PRT_i);
     VSAT_t  = VSAT_i * pow(TRatio, -AT_i);
     if (VSAT_t < 100.0) begin
-        $strobe("Warning: VSAT(%f) = %e is less than 100, setting it to 100.", DevTemp, VSAT_t);
         VSAT_t = 100.0;
     end
     if (HVMOD == 1) begin
@@ -3026,13 +3057,11 @@ analog begin
     if (ASYMMOD != 0) begin
         VSATR_t = VSATR_i * pow(TRatio, -AT_i);
         if (VSATR_t < 100.0) begin
-            $strobe("Warning: VSATR(%f) = %e is less than 100, setting it to 100.", DevTemp, VSATR_t);
             VSATR_t = 100.0;
         end
     end
     VSATCV_t = VSATCV_i * pow(TRatio, -AT_i);
     if (VSATCV_t < 100.0) begin
-        $strobe("Warning: VSATCV(%f) = %e is less than 100, setting it to 100.", DevTemp, VSATCV_t);
         VSATCV_t = 100.0;
     end
     DELTA_t = 1.0 / ( hypsmooth((1.0 / DELTA_i) * (1.0 + TDELTA * delTemp) - 2.0 , 1.0e-3) + 2.0);
@@ -3275,16 +3304,28 @@ analog begin
     Vd            = devsign * V(di, bi);
     Vs            = devsign * V(si, bi);
     Vds           = Vd - Vs;
+    Vdcv          = Vd;
     Vds_noswap    = Vds;
     Vsb_noswap    = Vs;
     Vdb_noswap    = Vd;
     Vbs_jct       = devsign * V(sbulk, si);
     Vbd_jct       = devsign * V(dbulk, di);
+    Vbd_jctcv     = devsign * V(dbulk, di);
     Vbd_ext       = devsign * V(dbulk, ddbulk);
     Vgd_noswap    = Vg - Vd;
     Vgs_noswap    = Vg - Vs;
     Vgd_ov_noswap = devsign * V(gm, di);
     Vgs_ov_noswap = devsign * V(gm, si);
+    Vgd_ov_noswapcv = Vgd_ov_noswap;
+
+    if (RDLCW != 0) begin
+        Vdcv  = Vd + devsign * (1.0 - RDLCWCV / RDLCW) * (V(di1, di));
+        Vbd_jctcv = Vbd_jct + Vd - Vdcv;
+        Vgd_ov_noswapcv = Vgd_ov_noswap + Vd - Vdcv;
+    end
+    Vdcv_noswap = Vdcv;
+    Vscv      = devsign * V(si, bi);
+    Vdscv     = Vdcv - Vscv;
 
     // Terminal voltage conditioning
     // Source-drain interchange
@@ -3293,8 +3334,29 @@ analog begin
         sigvds = -1.0;
         Vd = devsign * V(si, bi);
         Vs = devsign * V(di, bi);
+        Vscv = Vdcv_noswap;
+        Vdcv = devsign * V(si, bi);
     end
-    Vds  = Vd - Vs;
+    Vds   = Vd - Vs;
+    Vdscv = Vdcv - Vscv;
+
+    if (RDSMOD != 1 || HVCAP != 1 || HVMOD != 1) begin
+        Vdscv           = Vds;
+        Vdcv            = Vd;
+        Vscv            = Vs;
+        Vgd_ov_noswapcv = Vgd_ov_noswap;
+        Vbd_jctcv       = Vbd_jct;
+    end
+
+    T0   = AVDSX * Vdscv;
+    if (T0 > `EXPL_THRESHOLD) begin
+        T1 = T0;
+    end else begin
+        T1 = ln(1.0 + exp(T0));
+    end
+    Vdsx   = ((2.0 / AVDSX) * T1) - Vdscv - ((2.0 / AVDSX) * ln(2.0));
+    Vbsxcv = -(Vscv + 0.5 * (Vdscv - Vdsx));
+
     T0   = AVDSX * Vds;
     if (T0 > `EXPL_THRESHOLD) begin
         T1 = T0;
@@ -3814,12 +3876,12 @@ analog begin
 
     // CV calculations for HVMOD
     if (RDSMOD == 1 && HVCAP == 1 && HVMOD == 1) begin
-        vgfbdrift = -devsign * V(gm,di) - VFBOV ;
+        vgfbdrift = -Vgd_ov_noswapcv - VFBOV;
         vgfbdrift = vgfbdrift/Vt;
         gamhv     = sqrt(2.0 * `q * epssi * NDR * inv_Vt) / Cox;
         phibHV    = lln(NDR / ni);
         `PO_psip(vgfbdrift,gamhv,0,phibHV,psip_k)
-        `BSIM_q(psip_k, phibHV, devsign *V(di,bi)/Vt, gamhv, q_k)
+        `BSIM_q(psip_k, phibHV, Vdcv / Vt, gamhv, q_k)
 
         // calculate nq for the drift region
         `Smooth(psip_k, 1.0, 2.0, psipclamp_hv)
@@ -3933,7 +3995,7 @@ analog begin
         end
     end
 
-    ISUB = Iii * devsign;
+    ISUB = Iii * MULT_I * devsign;
 
     // Gate currents, Ref: BSIM4
     igbinv = 0.0; igbacc = 0.0; igb = 0.0; igcs = 0.0;
@@ -4296,9 +4358,9 @@ analog begin
     end else begin
         czbdswg_p2 = 1.0 / (1.0 - MJSWGD) * (1.0 - 0.05 * MJSWGD * (1.0 + MJSWGD) * czbdswg_p1);
     end
-    `JunCap(Czbd, Vbd_jct, PBD_t, MJD, czbd_p1, czbd_p2, Qbdj1)
-    `JunCap(Czbdsw, Vbd_jct, PBSWD_t, MJSWD, czbdsw_p1, czbdsw_p2, Qbdj2)
-    `JunCap(Czbdswg, Vbd_jct, PBSWGD_t, MJSWGD, czbdswg_p1, czbdswg_p2, Qbdj3)
+    `JunCap(Czbd, Vbd_jctcv, PBD_t, MJD, czbd_p1, czbd_p2, Qbdj1)
+    `JunCap(Czbdsw, Vbd_jctcv, PBSWD_t, MJSWD, czbdsw_p1, czbdsw_p2, Qbdj2)
+    `JunCap(Czbdswg, Vbd_jctcv, PBSWGD_t, MJSWGD, czbdswg_p1, czbdswg_p2, Qbdj3)
     Qbdj = Qbdj1 + Qbdj2 + Qbdj3;
     if (XPART > 0.0 && RBODYHVMOD == 1) begin
         Czbd       = XPART * CJD_t * ADeff;
@@ -4307,7 +4369,7 @@ analog begin
         end else begin
             Czbdsw     = XPART * CJSWD_t * PDeff;
         end
-        Czbdswg    = 0.0; // no gate-edge contribution to Qbdj_ext
+        // Czbdswg    = 0.0 >> (no gate-edge contribution to Qbdj_ext)
         `JunCap(Czbd, Vbd_ext, PBD_t, MJD, czbd_p1, czbd_p2, Qbdj1_ext)
         `JunCap(Czbdsw, Vbd_ext, PBSWD_t, MJSWD, czbdsw_p1, czbdsw_p2, Qbdj2_ext)
         Qbdj_ext = Qbdj1_ext + Qbdj2_ext;
@@ -4324,7 +4386,7 @@ analog begin
         SSL1_NT  = SSL1 * T2 * T1;
         PHIB_SSL = SSL3 * tanh(lexp(devsign * SSL4 * (V(gi, bi) - VTH - V(si,bi))));
         Issl     = sigvds * NF * Weff * SSL0_NT * lexp(T3) * lexp(-SSL1_NT * Leff) * lexp(PHIB_SSL / Vt) * (lexp(SSL2 * Vdsx / Vt) - 1.0);
-        I(di, si) <+ devsign * Issl;
+        I(di, si) <+ devsign * MULT_I * Issl;
     end
 
     // Harshit's new flicker noise model. Ref: H. Agarwal et. al., IEEE J-EDS, vol. 3, no. 4, April 2015.
@@ -4347,19 +4409,6 @@ analog begin
     T0d   = (Nl + Nstar) * (Nl + Nstar);
     T0e   = NOIA * `q * Vt;
     if (FNOIMOD == 1) begin
-        LH1 = LH;
-        if (Leff > LH1) begin
-            T0 = (Leff - LH1);
-        end else begin
-            LH1 = Leff;
-            T0 = LH1;
-        end
-        if (LINTNOI >= T0 / 2.0) begin
-            $strobe("Warning: LINTNOI = %e is too large - Leff for noise is negative. Re-setting LINTNOI = 0.", LINTNOI);
-            LINTNOI_i = 0.0;
-        end else begin
-            LINTNOI_i = LINTNOI;
-        end
         LeffnoiH = Leff;
         vgfbh  = (Vg - VFB_i) / Vt;
         gam_h  = sqrt(2.0 * `q * epssi * HNDEP / Vt) / Cox;
@@ -4447,17 +4496,29 @@ analog begin
         end else begin
             LINTNOI_i = LINTNOI;
         end
+        // Ref: P. Kushwaha et. al. EDL 2019
         if (NOIA > 0.0 || NOIB > 0.0 || NOIC > 0.0) begin
+            if (NOIA3 != 0 && NOIA > 0.0) begin
+                T1 = qia/QSREF_i;
+                T2 = 1 + pow(T1, MPOWER_i);
+                T3 = NOIA3_i/T2;
+                T4 = T3 / NOIA;
+                T5 = 0.5 * (T4 + 1 + sqrt((T4 - 1) * (T4 - 1) + 0.25 * SPFN * SPFN));
+                NOIAeff = NOIA * T5;
+            end else begin
+                NOIAeff = NOIA;
+            end
             Leffnoi   = Leff - 2.0 * LINTNOI_i;
             Leffnoisq = Leffnoi * Leffnoi;
             T0        = 1.0e10 * Cox * Leffnoisq;
             N0        = 2.0 * nq * Cox * Vt * qs * Mnud1 * Mnud / `q;
-            T1        = NOIA * lln((N0 + Nstar) / (Nl + Nstar));
+            T1        = NOIAeff * lln((N0 + Nstar) / (Nl + Nstar));
             T2        = NOIB * (N0 - Nl);
             T3        = 0.5 * NOIC * (N0 * N0 - Nl * Nl);
             T4        = 1.0e10 * Leffnoisq * Weff * NF;
             Ssi       = T0a / T0 * (T1 + T2 + T3) + T0b / T4 * DelClm * T0c / T0d;
             T5        = Weff * NF * Leffnoi * 1.0e10 * Nstar * Nstar;
+            T0e       = NOIAeff * `q * Vt;
             Swi       = T0e / T5 * ids * ids;
             T6        = Swi + Ssi;
             if (T6 > 0.0) begin
@@ -4524,18 +4585,18 @@ analog begin
                 sqig    = 0.0;
                 cm_igid = 0.0;
             end
-            I(N2)     <+ white_noise(MULT_I * cm_igid, "corl");
-            I(NI)     <+ white_noise(MULT_I * sqig * sqig * (1.0 - cm_igid), "corl");
-            I(NI)     <+ -sqig * MULT_I * V(N2);
-            I(NC)     <+ MULT_Q * ddt(mig * Cox * Weff * NF * Leff * V(NC));
+            I(N2)     <+ white_noise(cm_igid, "corl");
+            I(NI)     <+ white_noise(sqig * sqig * (1.0 - cm_igid), "corl");
+            I(NI)     <+ -sqig * V(N2);
+            I(NC)     <+ ddt(mig * Cox * Weff * NF * Leff * V(NC));
             I(di, si) <+ white_noise(MULT_I * sqid * sqid * (1.0 - cm_igid), "id");
             I(di, si) <+ sqid * MULT_I * V(N2);
             I(gi, si) <+ MULT_Q * ddt(0.5 * ((1.0 + sigvds) * mig * Cox * Weff * NF * Leff * V(NC)));
             I(gi, di) <+ MULT_Q * ddt(0.5 * ((1.0 - sigvds) * mig * Cox * Weff * NF * Leff * V(NC)));
         end
     endcase
-    I(N2) <+ MULT_I * V(N2);
-    I(NR) <+ MULT_I * V(NR);
+    I(N2) <+ V(N2);
+    I(NR) <+ V(NR);
 
     // Gate current shot noise
     if (IGCMOD != 0) begin
@@ -4548,12 +4609,11 @@ analog begin
 
     // C-V model
     vgfbCV   = vgfb;
-    gamg2    = (2.0 * `q * epssi * NGATE_i) / (Cox * Cox * Vt);
     invgamg2 = 0.0;
     if (CVMOD == 1) begin
         VFBCV_i = VFBCV_i + DELVTO;
         vg      = Vg * inv_Vt;
-        vs      = Vs * inv_Vt;
+        vs      = Vscv * inv_Vt;
         vfb     = VFBCV_i * inv_Vt;
         vgfbCV  = vg - vfb;
         phibCV    = lln(NDEPCV_i / ni);
@@ -4586,14 +4646,14 @@ analog begin
         Eeffs = EeffFactor * (qbs + eta_mu * qis);
 
         // Ref: BSIM4 mobility model
-        T3 = (UA_a + UC_a * Vbsx) * pow(Eeffs, EU_t);
+        T3 = (UA_a + UC_a * Vbsxcv) * pow(Eeffs, EU_t);
         T4 = 1.0 + T3;
         `Smooth(T4, 1.0, 0.0015, Dmobs)
         LambdaC_by2 = (U0_a / Dmobs) * Vt / (VSATCV_t * Lact);
         qdsat       = LambdaC_by2 * (qs * qs + qs) / (1.0 + LambdaC_by2 * (1.0 + qs));
         vdsatcv     = psip - 2.0 * phibCV - (2.0 * qdsat + lln((qdsat * 2.0 * nq * inv_gam) * ((qdsat * 2.0 * nq * inv_gam) + (gamCV / (nq - 1.0)))));
         VdsatCV     = vdsatcv * Vt;
-        `Smooth(VdsatCV - Vs, 0.0, 1.0e-3, VdssatCV)
+        `Smooth(VdsatCV - Vscv, 0.0, 1.0e-3, VdssatCV)
         if (A0CV == 0.0 && AGSCV == 0.0) begin
             AbulkCV = ABULK;
         end else begin
@@ -4604,8 +4664,8 @@ analog begin
         VdssatCV     = VdssatCV / AbulkCV;
         T7     = pow((Vds / VdssatCV) + 1e-6, 1.0 / DELTA_t);
         T8     = pow(1.0 + T7, -DELTA_t);
-        Vdseff = Vds * T8;
-        vdeff  = (Vdseff + Vs) * inv_Vt;
+        Vdseff = Vdscv * T8;
+        vdeff  = (Vdseff + Vscv) * inv_Vt;
         `BSIM_q(psip, phibCV, vdeff, gamCV, qdeff)
 
         // Reevaluation of nq to include qdeff needed for gummel symmetry
@@ -4627,7 +4687,7 @@ analog begin
         qia = nq * Vt * (qs + qdeff);
         Eeffm = EeffFactor * (qb + eta_mu * qia);
         `PO_psip((vgfbCV + DELVFBACC * inv_Vt), gamCV, DPD, phibCV, psip)
-        T3    = (UA_a + UC_a * Vbsx) * pow(Eeffm, EU_t);
+        T3    = (UA_a + UC_a * Vbsxcv) * pow(Eeffm, EU_t);
         T4    = 1.0 + T3;
         `Smooth(T4, 1.0, 0.0015, Dmob)
         LambdaC = 2.0 * (U0_a / Dmob) * Vt / (VSATCV_t * Lact);
@@ -4639,7 +4699,7 @@ analog begin
         Esat    = 2.0 * VSATCV_t / (U0_a / Dmob);
         EsatL   = Esat * Lact;
         Vasat   = VdssatCV + EsatL;
-        diffVds = Vds - Vdseff;
+        diffVds = Vdscv - Vdseff;
     end
     if (PCLMCV_i != 0.0) begin
         MdL = 1.0 + PCLMCV_i * lln(1.0 + diffVds / PCLMCV_i / Vasat);
@@ -4701,18 +4761,18 @@ analog begin
     // Overlap capacitances
     if (COVMOD == 0) begin
         Qovs = -Wact * NF * Cgsof * Vgs_ov_noswap;
-        Qovd = -Wact * NF * Cgdof * Vgd_ov_noswap;
+        Qovd = -Wact * NF * Cgdof * Vgd_ov_noswapcv;
     end else begin
         T0    = sqrt((Vgs_ov_noswap - Vfbsdr + `DELTA_1) * (Vgs_ov_noswap - Vfbsdr + `DELTA_1) + 4.0 * `DELTA_1);
         Vgsov = 0.5 * (Vgs_ov_noswap - Vfbsdr + `DELTA_1 - T0);
         T6    = Vgsov / pow(1.0 + pow((-Vgsov / CKAPPAS1), CKAPPAS2), 1.0 / CKAPPAS2);
         T1    = sqrt(1.0 - 4.0 * T6 / CKAPPAS_i);
         Qovs  = -Wact * NF * (Cgsof * Vgs_ov_noswap + CGSL_i * (Vgs_ov_noswap - Vfbsdr - Vgsov - 0.5 * CKAPPAS_i * (-1.0 + T1)));
-        T0    = sqrt((Vgd_ov_noswap - Vfbsdr + `DELTA_1) * (Vgd_ov_noswap - Vfbsdr + `DELTA_1) + 4.0 * `DELTA_1);
-        Vgdov = 0.5 * (Vgd_ov_noswap - Vfbsdr + `DELTA_1 - T0);
+        T0    = sqrt((Vgd_ov_noswapcv - Vfbsdr + `DELTA_1) * (Vgd_ov_noswapcv - Vfbsdr + `DELTA_1) + 4.0 * `DELTA_1);
+        Vgdov = 0.5 * (Vgd_ov_noswapcv - Vfbsdr + `DELTA_1 - T0);
         T6    = Vgdov / pow(1.0 + pow((-Vgdov / CKAPPAD1), CKAPPAD2), 1.0 / CKAPPAD2);
         T2    = sqrt(1.0 - 4.0 * T6 / CKAPPAD_i);
-        Qovd  = -Wact * NF * (Cgdof * Vgd_ov_noswap + CGDL_i * (Vgd_ov_noswap - Vfbsdr - Vgdov - 0.5 * CKAPPAD_i * (-1.0 + T2)));
+        Qovd  = -Wact * NF * (Cgdof * Vgd_ov_noswapcv + CGDL_i * (Vgd_ov_noswapcv - Vfbsdr - Vgdov - 0.5 * CKAPPAD_i * (-1.0 + T2)));
     end
     Qovb = -devsign * NF * Lact * CGBO * V(gm, bi);
     Qovg = -(Qovs + Qovd + Qovb);
@@ -4721,7 +4781,6 @@ analog begin
     if (EDGEFET == 1) begin
         phib_edge     = lln(NDEPEDGE_i / ni);
         Phist         = max(0.4 + Vt * phib_edge + PHIN_i, 0.4);
-        sqrtPhist     = sqrt(Phist);
         T1DEP         = sqrt(2.0 * epssi / (`q * NDEPEDGE_i));
         NFACTOREDGE_t = NFACTOREDGE_i * hypsmooth((1.0 + TNFACTOREDGE_i * (TRatio - 1.0)), 1e-3);
         ETA0EDGE_t    = ETA0EDGE_i * (1.0 + TETA0EDGE_i * (TRatio - 1.0));
@@ -4757,7 +4816,6 @@ analog begin
         DGAMMAEDGE_i = DGAMMAEDGE * (1.0 + DGAMMAEDGEL * pow(Leff, -DGAMMAEDGELEXP));
         gam_edge          = sqrt(2.0 * `q * epssi * NDEPEDGE_i * inv_nVt) / Cox;
         gam_edge          = gam_edge * (1.0 + DGAMMAEDGE_i);
-        inv_gam           = 1.0 / gam_edge;
 
         // psip: pinch-off voltage
         phib_n_edge  = phib_edge / n;
@@ -4945,12 +5003,12 @@ analog begin
         I(gi, di) <+ (IGD + IGCD);
     end
     if (sigvds > 0) begin
-        I(di, bi) <+ MULT_I * ISUB + IGIDL;
+        I(di, bi) <+ ISUB + IGIDL;
         I(di1, bi) <+ MULT_I * devsign * IsubDR;
         I(si, bi) <+ IGISL;
     end else begin
         I(di, bi) <+ IGIDL;
-        I(si, bi) <+ MULT_I * ISUB + IGISL;
+        I(si, bi) <+ ISUB + IGISL;
     end
 
     // External S/D resistances
@@ -5004,7 +5062,7 @@ analog begin
     end
 
     if (RGATEMOD == 3) begin
-        I(gm, gi) <+ V(gm, gi) * Gcrg;
+        I(gm, gi) <+ V(gm, gi) * MULT_I * Gcrg;
     end else begin
         V(gm, gi) <+ 0.0;
     end
