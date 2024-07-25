@@ -1,5 +1,5 @@
 // ****************************************************************************
-// *  BSIM-BULK 107.2.0 Beta0_2 released on 10/17/2023                        *
+// *  BSIM-BULK 107.2.0 Beta1 released on 12/20/2023                          *
 // *  BSIM Bulk MOSFET Model Equations (Verilog-A)                            *
 // ****************************************************************************
 
@@ -740,7 +740,7 @@ endfunction
 `MPRoz( NDEPWLEXP         ,1.0                                      ,""                                      ,"Width-length dependence exponent coefficient of NDEP" )
 `MPRnb( LNDEP             ,0.0                                      ,"1/m^2"                                 ,"Length dependence of NDEP" )
 `MPRnb( WNDEP             ,0.0                                      ,"1/m^2"                                 ,"Width dependence of NDEP" )
-`MPRnb( PNDEP             ,0.0                                      ,"1/m"                                   ,"Area dependence of NDEP " )
+`MPRnb( PNDEP             ,0.0                                      ,"1/m"                                   ,"Area dependence of NDEP" )
 `MPRnb( NDEPCV            ,NDEP                                     ,"1/m^3"                                 ,"Channel doping concentration for C-V" )
 `MPRnb( NDEPCVL1          ,NDEPL1                                   ,"m"                                     ,"Length dependence coefficient of NDEPCV" )
 `MPRoz( NDEPCVLEXP1       ,NDEPLEXP1                                ,""                                      ,"Length dependence exponent coefficient of NDEPCV" )
@@ -1429,8 +1429,8 @@ endfunction
 `MPRnb( VTSSWGD           ,VTSSWGS                                  ,"V"                                     ,"Unit length trap-assisted current voltage dependent parameter for gate-edge side-wall drain junction" )
 
 // High-speed/RF model parameters
-`MPRcz( XRCRG1            ,12.0                                     ,""                                      ,"1st fitting parameter the bias-dependent Rg " )
-`MPRcz( XRCRG2            ,1.0                                      ,""                                      ,"2nd fitting parameter the bias-dependent Rg " )
+`MPRcz( XRCRG1            ,12.0                                     ,""                                      ,"1st fitting parameter the bias-dependent Rg" )
+`MPRcz( XRCRG2            ,1.0                                      ,""                                      ,"2nd fitting parameter the bias-dependent Rg" )
 `MPRcz( GBMIN             ,1.0e-12                                  ,"mho"                                   ,"Minimum body conductance" )
 `MPRoz( RBPS0             ,50.0                                     ,"ohm"                                   ,"Scaling pre-factor for RBPS" )
 `MPRcz( RBPSL             ,0.0                                      ,""                                      ,"Length scaling parameter for RBPS" )
@@ -1823,7 +1823,7 @@ endfunction
 `MPRnb( LOVERACC       ,LOVER           ,"m"                                     ,"Drift region length" )
 `MPRoz( NDR            ,NDEP            ,"1/m^3"                                 ,"Drift region doping" )
 `MPRcz( SLHV           ,0               ,""                                      ,"Parameter and Flag for controlling slope of accumulation region capacitance. 0: Turn-Off,  1: Turn On" )
-`MPRoz( SLHV1          ,1.0             ,""                                      ,"Parameter for slope of the accumulation capacitance " )
+`MPRoz( SLHV1          ,1.0             ,""                                      ,"Parameter for slope of the accumulation capacitance" )
 `MPRnb( PRTHV          ,0.0             ,""                                      ,"Temperature coefficient for drift resistance" )
 `MPRnb( ATHV           ,0               ,"m/s"                                   ,"Temperature coefficient for drift region saturation velocity" )
 `MPRcc( HVFACTOR       ,1e-3            ,""            ,1e-4         ,1          ,"" )
@@ -3596,7 +3596,7 @@ analog begin
     // Normalized charge qdeff at drain end of channel
     // Vdssat clamped to avoid negative values during transient simulation
 
-    if (A0 == 0.0 && AGS == 0.0)begin
+    if (A0 == 0.0 && AGS == 0.0) begin
         AbulkIV = 1.0;
     end else begin
         T1  = Leff / (Leff + sqrt(XJ_i * Xdep));
@@ -4466,7 +4466,7 @@ analog begin
             T6     = Weff * NF * Leffnoi * 1.0e10 * Nstar * Nstar;
             Swi_ch = T0e / T6 * ids * ids;
             T7 = Swi_ch + Ssi_ch;
-            if (T7 > 0.0)  begin
+            if (T7 > 0.0) begin
                 FNPowerAt1Hz_ch = (Ssi_ch * Swi_ch) / T7;
             end else begin
                 FNPowerAt1Hz_ch = 0.0;
@@ -4552,7 +4552,6 @@ analog begin
             Gtnoi = (T0 / T1) * NTNOI;
             sidn  = Nt * Gtnoi;
             I(di, si) <+ white_noise(MULT_I * sidn, "id");
-            V(N1)     <+ 0.0;
         end
         1: begin
             Vtn   = 2.0 * nq * nVt;
@@ -4978,7 +4977,7 @@ analog begin
     VDSAT = Vdssat;                                  // Drain-to-source saturation voltage
     GM    = ddx(IDS, V(gi));                         // Transconductance
     GMBS  = ddx(IDS, V(bi));                         // Body transconductance
-    if (sigvds > 0)begin
+    if (sigvds > 0) begin
         GDS   = ddx(IDS, V(di));                     // Output conductance
     end else begin
         GDS   = ddx(-IDS, V(si));

@@ -1,0 +1,77 @@
+#!/usr/bin/perl
+
+# script to find unused (but declared) variables in a Perl script
+
+$FILE = $ARGV[0] or die "Must specify file to check\n";
+open(INFILE, "<$FILE") or die "Can't open $FILE : $!\n";
+
+$found_unused = 0;
+$in_sub = 0;
+$name = "";
+@Vars = ();
+@Used = (); 
+
+while ($line = <INFILE>) {
+    if ($line =~ /^sub/) {
+        if ($in_sub) {
+            die "In sub $name, found $line";
+        }
+        ($sub, $name, $rest) = split ' ', $line, 3;
+        $in_sub = 1;
+    } elsif ($line =~ /^}/) {
+        $in_sub = 0;
+        $unused = "";
+        for ($i=0;$i<=$#Vars;++$i) {
+            if ($Used[$i] == 0) {
+                if ($unused ne "") {
+                    $unused .= ", ";
+                }
+                $unused .= $Vars[$i];
+            }
+        }
+        if ($unused ne "") {
+            print "In sub $name, unused: $unused\n";
+            $found_unused = 1;
+        }
+        $name = "";
+        @Vars = ();
+        @Used = (); 
+    }
+    if ($in_sub) {
+        if ($line =~ /\s+my\(([^\)]*)\)/) {
+            $var1 = $1;
+            @var2 = split ',', $var1;
+            foreach $var (@var2) {
+                $var =~ s/^\s+|\s+$//g ;
+                push(@Vars, $var);
+                push(@Used, 0);
+            }
+        } else {
+            for ($i=0;$i<=$#Vars;++$i) {
+                if ($Used[$i] == 0) {
+                    $var = $Vars[$i];
+                    $ch = substr($var,0,1);
+                    if ($ch eq "\$") {
+                        $var = "\\$var";
+                    }
+                    if ($line =~ /$var/) {
+                        $Used[$i] = 1;
+                    } else {
+                        if ($ch eq "@" || $ch eq "%") {
+                            $var2 = "\\\$" . substr($var,1);
+                            if ($line =~ /$var2/) {
+                                $Used[$i] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+close(INFILE);
+
+if ($found_unused == 0) {
+    print "$FILE is ok\n";
+}
