@@ -1,5 +1,5 @@
 // ****************************************************************************
-// *  BSIM-BULK 107.2.0 Beta2 released on 05/30/2024                          *
+// *  BSIM-BULK 107.2.0 Beta3 released on 07/29/2024                          *
 // *  BSIM Bulk MOSFET Model Equations (Verilog-A)                            *
 // ****************************************************************************
 
@@ -3864,7 +3864,11 @@ analog begin
                 $strobe("Warning: Enable RBODYMOD=2");
             end
             Vb_cm = sqrt(V(bi,b) * V(bi,b) + 1.0e-6);
-            idrift_sat_d = T11 * NDRIFTD * T9 * (1 + devsign * CMD1 * pow(Vb_cm, CMD2));
+            if (IIMOD != 0) begin
+                idrift_sat_d = T11 * NDRIFTD * T9 * (1 + devsign * CMD1 * pow(Vb_cm, CMD2));
+            end else begin
+                idrift_sat_d = T11 * NDRIFTD * T9;
+            end
             T2 = 1.0 + Vsb_noswap / vbi_drift;
             `Smooth(T2, 0.0, 0.05, T2)
             T6 = (1.0 - DRB1 * ( sqrt(T2) - 1.0) - DRB2 * Vsb_noswap);
@@ -3884,7 +3888,11 @@ analog begin
                 $strobe("Warning: Enable RBODYMOD=2");
             end
             Vb_cm = sqrt(V(bi,b) * V(bi,b) + 1.0e-6);
-            idrift_sat_s = T11 * NDRIFTS * (1 + devsign * CMS1 * pow(Vb_cm, CMS2));
+            if (IIMOD != 0) begin
+                idrift_sat_s = T11 * NDRIFTS * (1 + devsign * CMS1 * pow(Vb_cm, CMS2));
+            end else begin
+                idrift_sat_s = T11 * NDRIFTS;
+            end
             T2 = 1.0 + Vsb_noswap / vbi_drift;
             `Smooth(T2, 0.0, 0.05, T2)
             T6 = (1.0 - DRB1 * ( sqrt(T2) - 1.0) - DRB2 * Vsb_noswap);
