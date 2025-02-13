@@ -1,29 +1,14 @@
-// ****************************************************************************
-// *  BSIM-BULK 107.2.0 released on 08/20/2024                                *
-// *  BSIM Bulk MOSFET Model Equations (Verilog-A)                            *
-// ****************************************************************************
+// **********************************************************************************
+// *  BSIM-BULK 107.2.1 released on 02/11/2025                                      *
+// *  BSIM Bulk MOSFET Model Equations (Verilog-A)                                  *
+// **********************************************************************************
 
-// ****************************************************************************
-// *  Copyright © 2024 University of California                               *
-// *                                                                          *
-// *  Project director: Prof. Chenming Hu, Prof.Sayeef Salahuddin             *
-// *                                                                          *
-// *  Current developers: Yawar Hayat Zarkob (Ph.D. student, IIT Kanpur)      *
-// *                      Ayushi Sharma (Ph.D. student, IIT Kanpur)           *
-// *                      Dinesh Rajasekharan (Postdoc, UC Berkeley)          *
-// *                      Chetan K. Dabhi (Postdoc, UC Berkeley)              *
-// *                      Ahtisham Pampori (Postdoc, UC Berkeley)             *
-// *                      Girish Pahwa (Assistant Researcher, UC Berkeley)    *
-// *                      Prof. Yogesh Chauhan (IIT Kanpur)                   *
-// *                                                                          *
-// *  Past developers:    Ravi Goel (Ph.D., IIT Kanpur)                       *
-// *                      Harshit Agarwal (Postdoc, UC Berkeley)              *
-// *                      Pragya Kushwaha (Postdoc, UC Berkeley)              *
-// *                      Chetan Gupta  (Ph.D., IIT Kanpur)                   *
-// *                      Dr. Huan-Lin Chang (UC Berkeley)                    *
-// *                      Sriramkumar Venugopalan, (UC Berkeley)              *
-// *                      M. A. Karim (UC Berkeley)                           *
-// ****************************************************************************
+// **********************************************************************************
+// *  Copyright © 2025 University of California                                     *
+// *                                                                                *
+// *  Project directors: Prof. Chenming Hu, Prof.Sayeef Salahuddin                  *
+// *  List of developers: https://www.bsim.berkeley.edu/models/bsimbulk/auth_bulk/  *
+// **********************************************************************************
 
 `include "constants.vams"
 `include "disciplines.vams"
@@ -3442,7 +3427,7 @@ analog begin
 
     // Vth shift for DIBL
     dVth_dibl = -(ETA0_a + ETAB_i * Vbsx) * Vdsx;
-    `Smooth2(dVth_dibl, 0.0, 5.0e-5, dVth_dibl)
+    `Smooth2(dVth_dibl, 0.0, 5.0e-3, dVth_dibl)
 
     // Vth shift with temperature
     dvth_temp = (KT1_i + KT1L / Leff + KT2_i * Vbsx) * (pow(TRatio, KT1EXP) - 1.0);
@@ -3863,9 +3848,9 @@ analog begin
             if (CMD1!=0 && RBODYMOD!=2) begin
                 $strobe("Warning: Enable RBODYMOD=2");
             end
-            Vb_cm = sqrt(V(bi,b) * V(bi,b) + 1.0e-6);
-            if (IIMOD != 0) begin
-                idrift_sat_d = T11 * NDRIFTD * T9 * (1 + devsign * CMD1 * pow(Vb_cm, CMD2));
+            if ((IIMOD != 0) && (CMD1>0)) begin
+                Vb_cm = sqrt(V(bi,b) * V(bi,b) + pow(10, 2*(-3-log(CMD1))/CMD2));
+                idrift_sat_d = T11 * NDRIFTD * T9 * (1 + CMD1 * pow(Vb_cm, CMD2));
             end else begin
                 idrift_sat_d = T11 * NDRIFTD * T9;
             end
@@ -3887,9 +3872,9 @@ analog begin
             if (CMS1!=0 && RBODYMOD!=2) begin
                 $strobe("Warning: Enable RBODYMOD=2");
             end
-            Vb_cm = sqrt(V(bi,b) * V(bi,b) + 1.0e-6);
-            if (IIMOD != 0) begin
-                idrift_sat_s = T11 * NDRIFTS * (1 + devsign * CMS1 * pow(Vb_cm, CMS2));
+            if ((IIMOD != 0) && (CMS1>0)) begin
+                Vb_cm = sqrt(V(bi,b) * V(bi,b) + pow(10, 2*(-3-log(CMS1))/CMS2));
+                idrift_sat_s = T11 * NDRIFTS * (1 + CMS1 * pow(Vb_cm, CMS2));
             end else begin
                 idrift_sat_s = T11 * NDRIFTS;
             end
@@ -4055,7 +4040,11 @@ analog begin
         Nextra = Ntot/NDRIFTD - 1.0;
         `Smooth(Nextra, 0.0, DELTAII, Nextra)
         Nextra = NDRIFTD * Nextra;
-        `Smooth(devsign * V(d,s) - DRII3 * Vdseffii - DRII2  - CMD1 * devsign * pow(Vb_cm, DRII4), 0.0, 0.05, T2)
+        if (CMD1>0) begin
+            `Smooth(devsign * V(d,s) - DRII3 * Vdseffii - DRII2  - CMD1 * pow(Vb_cm, DRII4), 0.0, 0.05, T2)
+        end else begin
+            `Smooth(devsign * V(d,s) - DRII3 * Vdseffii - DRII2, 0.0, 0.05, T2)
+        end
         T3 = 2.0 * `q /(EPSRSUB * `EPS0) * Nextra;
         T3 = pow(T3 * T2,0.5);
         T4 = ALPHADR1 * Vbsx + ALPHADR2 * Vbsx * Vbsx;
@@ -4209,20 +4198,18 @@ analog begin
 
     // Junction currents and capacitances
     // Source-side junction currents
+    T0  = Vbs_jct / Nvtms;
+    T1  = lexp(T0) - 1.0;
+    T2  = IVjsmRev + SslpRev * (Vbs_jct - VjsmRev);
+    T3  = T1 * T2;
+    T1  = (BVS + Vbs_jct) / Nvtms;
+    T2  = lexp(-T1);
+    T4  = Isbs * (lexp(T0) + XExpBVS - 1.0 - XJBVS * T2);
+    T5  = IVjsmFwd + SslpFwd * (Vbs_jct - VjsmFwd);
+
     if (Isbs > 0.0) begin
-        if (Vbs_jct < VjsmRev) begin
-            T0  = Vbs_jct / Nvtms;
-            T1  = lexp(T0) - 1.0;
-            T2  = IVjsmRev + SslpRev * (Vbs_jct - VjsmRev);
-            Ibs = T1 * T2;
-        end else if (Vbs_jct <= VjsmFwd) begin
-            T0  = Vbs_jct / Nvtms;
-            T1  = (BVS + Vbs_jct) / Nvtms;
-            T2  = lexp(-T1);
-            Ibs = Isbs * (lexp(T0) + XExpBVS - 1.0 - XJBVS * T2);
-        end else begin
-            Ibs = IVjsmFwd + SslpFwd * (Vbs_jct - VjsmFwd);
-        end
+        T6  = T3 / 2.0 * (1.0 - tanh((Vbs_jct - VjsmRev) / Nvtms)) + T4 / 2.0 * (1.0 + tanh((Vbs_jct - VjsmRev) / Nvtms));
+        Ibs = T6 / 2.0 * (1.0 - tanh((Vbs_jct - VjsmFwd) / Nvtms)) + T5 / 2.0 * (1.0 + tanh((Vbs_jct - VjsmFwd) / Nvtms));
     end else begin
         Ibs = 0.0;
     end
@@ -4261,39 +4248,36 @@ analog begin
             Ibs = Ibs - Weffcj * NF * JTSSWGS_t * T1;
         end
     end
+
     // Drain-side junction currents
+    T0  = Vbd_jct / Nvtmd;
+    T1  = lexp(T0) - 1.0;
+    T2  = IVjdmRev + DslpRev * (Vbd_jct - VjdmRev);
+    T3  = OneMinusXpart * T1 * T2;
+    T1  = (BVD + Vbd_jct) / Nvtmd;
+    T2  = lexp(-T1);
+    T4  = OneMinusXpart * Isbd * (lexp(T0) + XExpBVD - 1.0 - XJBVD * T2);
+    T5  = OneMinusXpart * (IVjdmFwd + DslpFwd * (Vbd_jct - VjdmFwd));
+
     if (Isbd > 0.0) begin
         if (OneMinusXpart > 0.0) begin
-            if (Vbd_jct < VjdmRev) begin
-                T0  = Vbd_jct / Nvtmd;
-                T1  = lexp(T0) - 1.0;
-                T2  = IVjdmRev + DslpRev * (Vbd_jct - VjdmRev);
-                Ibd = OneMinusXpart * T1 * T2;
-            end else if (Vbd_jct <= VjdmFwd) begin
-                T0  = Vbd_jct / Nvtmd;
-                T1  = (BVD + Vbd_jct) / Nvtmd;
-                T2  = lexp(-T1);
-                Ibd = OneMinusXpart * Isbd * (lexp(T0) + XExpBVD - 1.0 - XJBVD * T2);
-            end else begin
-                Ibd = OneMinusXpart * (IVjdmFwd + DslpFwd * (Vbd_jct - VjdmFwd));
-            end
+            T6  = T3 / 2.0 * (1.0 - tanh((Vbd_jct - VjdmRev) / Nvtmd)) + T4 / 2.0 * (1.0 + tanh((Vbd_jct - VjdmRev) / Nvtmd));
+            Ibd = T6 / 2.0 * (1.0 - tanh((Vbd_jct - VjdmFwd) / Nvtmd)) + T5 / 2.0 * (1.0 + tanh((Vbd_jct - VjdmFwd) / Nvtmd));
         end else begin
             Ibd = 0.0;
         end
         if (XPART > 0.0 && RBODYHVMOD == 1) begin
-            if (Vbd_ext < VjdmRev) begin
-                T0  = Vbd_ext / Nvtmd;
-                T1  = lexp(T0) - 1.0;
-                T2  = IVjdmRev + DslpRev * (Vbd_ext - VjdmRev);
-                Ibd_ext = XPART * T1 * T2;
-            end else if (Vbd_ext <= VjdmFwd) begin
-                T0  = Vbd_ext / Nvtmd;
-                T1  = (BVD + Vbd_ext) / Nvtmd;
-                T2  = lexp(-T1);
-                Ibd_ext = XPART * Isbd * (lexp(T0) + XExpBVD - 1.0 - XJBVD * T2);
-            end else begin
-                Ibd_ext = XPART * (IVjdmFwd + DslpFwd * (Vbd_ext - VjdmFwd));
-            end
+            T0  = Vbd_ext / Nvtmd;
+            T1  = lexp(T0) - 1.0;
+            T2  = IVjdmRev + DslpRev * (Vbd_ext - VjdmRev);
+            T3  = XPART * T1 * T2;
+            T1  = (BVD + Vbd_ext) / Nvtmd;
+            T2  = lexp(-T1);
+            T4  = XPART * Isbd * (lexp(T0) + XExpBVD - 1.0 - XJBVD * T2);
+            T5  = XPART * (IVjdmFwd + DslpFwd * (Vbd_ext - VjdmFwd));
+
+            T6      = T3 / 2.0 * (1.0 - tanh((Vbd_ext - VjdmRev) / Nvtmd)) + T4 / 2.0 * (1.0 + tanh((Vbd_ext - VjdmRev) / Nvtmd));
+            Ibd_ext = T6 / 2.0 * (1.0 - tanh((Vbd_ext - VjdmFwd) / Nvtmd)) + T5 / 2.0 * (1.0 + tanh((Vbd_ext - VjdmFwd) / Nvtmd));
         end else begin
             Ibd_ext = 0.0;
         end
